@@ -2,6 +2,8 @@ import React from 'react';
 import styles from '../../../../Common/TableCommon/Table.scss';
 import { fkViolationOnUpdate, fkViolationOnDelete } from '../TooltipMessages';
 import { updateSchemaInfo } from '../../DataActions';
+import Col from 'react-bootstrap/lib/Col';
+import Row from 'react-bootstrap/lib/Row';
 import ToolTip from '../../../../Common/Tooltip/Tooltip';
 
 const violiationActions = [
@@ -22,6 +24,8 @@ const ForeignKeySelector = ({
   service,
   schemaList,
   refTables,
+  displayColumnNames,
+  setDisplayColumnNames,
 }) => {
   const { refTableName, colMappings, refSchemaName } = foreignKey;
   const numOfFks = foreignKeys.length;
@@ -151,20 +155,22 @@ const ForeignKeySelector = ({
       : undefined;
     return (
       <div className={`${styles.add_mar_bottom}`}>
-        <div className={`row ${styles.add_mar_bottom_mid}`}>
-          <div className={`col-sm-4 ${styles.add_mar_right}`}>
-            <b>From:</b>
-          </div>
-          <div className={`col-sm-4 ${styles.add_mar_right}`}>
-            <b>To:</b>
-          </div>
-        </div>
+        <Row className={`${styles.add_mar_bottom_mid} ${styles.padd_right_40}`}>
+          {['From', 'To', 'Display column'].map(label => (
+            <Col sm={4} key={label}>
+              <b>{label}:</b>
+            </Col>
+          ))}
+        </Row>
         {colMappings.map((colMap, _i) => {
           // from column
           const lc = colMap.column;
 
           // to column
           const rc = colMap.refColumn;
+
+          // rel table column display name
+          const displayName = displayColumnNames[_i] || '';
 
           // dispatch action for setting column config
           const dispatchSetCols = (key, value) => {
@@ -189,6 +195,17 @@ const ForeignKeySelector = ({
             dispatchSetCols('refColumn', event.target.value);
           };
 
+          const onDisplayColumnNameChange = event => {
+            // TODO: expose this from outer component?\
+            event.persist();
+            const newColumnNames = [...displayColumnNames];
+            newColumnNames[_i] = event.target.value;
+            setDisplayColumnNames(prev => ({
+              ...prev,
+              [foreignKey.constraintName]: newColumnNames,
+            }));
+          };
+
           // dispatch action for removing a pair from column mapping
           const dispatchRemoveCol = () => {
             const newFks = JSON.parse(JSON.stringify(foreignKeys));
@@ -198,6 +215,7 @@ const ForeignKeySelector = ({
             ];
             newFks[index].colMappings = newColMapping;
             dispatch(setForeignKeys(newFks));
+            setDisplayColumnNames(prev => prev.filter((_, idx) => idx !== _i));
           };
 
           // show remove icon for all column pairs except last
@@ -218,7 +236,7 @@ const ForeignKeySelector = ({
               className={`row ${styles.add_mar_bottom_mid} ${styles.display_flex}`}
               key={`fk-col-${index}-${_i}`}
             >
-              <div className={`col-sm-4 ${styles.add_mar_right}`}>
+              <Col sm={4}>
                 <select
                   className={`form-control ${styles.select} ${styles.wd100Percent}`}
                   value={lc}
@@ -240,8 +258,8 @@ const ForeignKeySelector = ({
                     );
                   })}
                 </select>
-              </div>
-              <div className={'col-sm-4'}>
+              </Col>
+              <Col sm={4}>
                 <select
                   className={`form-control ${styles.select} ${styles.wd100Percent}`}
                   value={rc}
@@ -264,8 +282,32 @@ const ForeignKeySelector = ({
                       );
                     })}
                 </select>
-              </div>
-              <div>{removeIcon}</div>
+              </Col>
+              <Col sm={4}>
+                <select
+                  className={`form-control ${styles.select} ${styles.wd100Percent}`}
+                  value={displayName}
+                  onChange={onDisplayColumnNameChange}
+                  disabled={!refTableName}
+                  title={'' /** TO DO */}
+                  data-test={`foreign-key-${index}-rcol-${_i}`}
+                >
+                  {!displayName && (
+                    <option value="" disabled>
+                      {'-- display_name --'}
+                    </option>
+                  )}
+                  {refTables[refTableName] &&
+                    refTables[refTableName].map(rcOpt => {
+                      return (
+                        <option key={rcOpt} value={rcOpt}>
+                          {rcOpt}
+                        </option>
+                      );
+                    })}
+                </select>
+              </Col>
+              <div className={styles.width_40}>{removeIcon}</div>
             </div>
           );
         })}

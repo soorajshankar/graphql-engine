@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ordinalColSort } from '../utils';
 import {
   setForeignKeys,
@@ -21,7 +21,44 @@ const ForeignKeyEditor = ({
   dispatch,
   fkModify,
   schemaList,
+  consoleOpts,
 }) => {
+  const [displayColumnNames, setDisplayColumnNames] = useState({});
+  useEffect(() => {
+    if (!consoleOpts || !consoleOpts.fkDisplayNames) return;
+    const currentTableMappings = consoleOpts.fkDisplayNames.filter(
+      m =>
+        m.tableName === tableSchema.table_name &&
+        m.schemaName === tableSchema.table_schema
+    );
+
+    // TODO: explain why I'm doing this
+    const newConfig = {};
+    if (fkModify && fkModify.length > 0) {
+      fkModify.forEach(fk => {
+        const sortedDisplayColumnNames = [];
+        const currentFkMappings = currentTableMappings.find(
+          opts => opts.constraintName === fk.constraintName
+        );
+        if (!currentFkMappings) return;
+        fk.colMappings.forEach(colMapping => {
+          const newDN = currentFkMappings.mappings.find(
+            m =>
+              // m.columnName === colMapping.column && why there is number
+              m.refColumnName === colMapping.refColumn &&
+              m.refTableName === fk.refTableName
+          );
+          if (newDN) {
+            sortedDisplayColumnNames.push(newDN.displayColumnName);
+          }
+        });
+        newConfig[fk.constraintName] = sortedDisplayColumnNames;
+      });
+    }
+
+    setDisplayColumnNames(newConfig);
+  }, [consoleOpts]);
+
   const columns = tableSchema.columns.sort(ordinalColSort);
 
   // columns in the right order with their indices
@@ -104,6 +141,8 @@ const ForeignKeyEditor = ({
         orderedColumns={orderedColumns}
         dispatch={dispatch}
         setForeignKeys={setForeignKeys}
+        displayColumnNames={displayColumnNames[fk.constraintName] || []}
+        setDisplayColumnNames={setDisplayColumnNames}
       />
     );
 
@@ -151,7 +190,9 @@ const ForeignKeyEditor = ({
     let saveFk;
     if (fkConfig) {
       saveFk = () => {
-        dispatch(saveForeignKeys(i, tableSchema, orderedColumns));
+        dispatch(
+          saveForeignKeys(i, tableSchema, orderedColumns, displayColumnNames)
+        );
       };
     }
 
