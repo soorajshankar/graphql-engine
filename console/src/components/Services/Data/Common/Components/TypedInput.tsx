@@ -5,24 +5,48 @@ import JsonInput from '../../../../Common/CustomInputTypes/JsonInput';
 import TextInput from '../../../../Common/CustomInputTypes/TextInput';
 import styles from '../../../../Common/TableCommon/Table.scss';
 import { isColumnAutoIncrement } from '../../../../Common/utils/pgUtils';
-import SearchableSelect from '../../../../../components/Common/SearchableSelect/SearchableSelect';
+import SearchableSelect from '../../../../Common/SearchableSelect/SearchableSelect';
 
 const searchableSelectStyles = {
   container: {
-    width: '270px',
+    width: '270px'
   },
   control: {
-    minHeight: '34px',
+    minHeight: '34px'
   },
   dropdownIndicator: {
-    padding: '5px',
+    padding: '5px'
   },
   valueContainer: {
-    padding: '0px 12px',
-  },
+    padding: '0px 12px'
+  }
 };
 
-export const TypedInput = ({
+type Column = {
+  column_name: string;
+  data_type: string;
+  column_default: string;
+};
+
+type Props = {
+  enumOptions: Record<string, string[]>;
+  col: Column;
+  index: number;
+  clone: Record<string, any>;
+  inputRef: React.Ref<any>;
+  onChange: () => void;
+  onFocus: () => void;
+  prevValue: string;
+  hasDefault: boolean;
+  fkOptions: Array<{
+    from: string;
+    to: string;
+    displayName: string;
+    data: Array<Record<string, string>>;
+  }>;
+};
+
+export const TypedInput: React.FC<Props> = ({
   enumOptions,
   col,
   index,
@@ -32,12 +56,12 @@ export const TypedInput = ({
   onFocus,
   prevValue,
   hasDefault,
-  fkOptions,
+  fkOptions
 }) => {
   const {
     column_name: colName,
     data_type: colType,
-    column_default: colDefault,
+    column_default: colDefault
   } = col;
 
   const isAutoIncrement = isColumnAutoIncrement(col);
@@ -48,11 +72,18 @@ export const TypedInput = ({
     return '';
   };
 
-  const onClick = e => {
-    e.target
+  const onClick = (
+    e: React.MouseEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const element = (e.target as HTMLInputElement)
       .closest('.radio-inline')
-      .querySelector('input[type="radio"]').checked = true;
-    e.target.focus();
+      ?.querySelector('input[type="radio"]');
+
+    if (element) {
+      (element as HTMLInputElement).checked = true;
+    }
+
+    (e.target as HTMLInputElement).focus();
   };
 
   const standardInputProps = {
@@ -64,7 +95,7 @@ export const TypedInput = ({
     className: `form-control ${styles.insertBox}`,
     defaultValue: getDefaultValue(),
     type: 'text',
-    placeholder: 'text',
+    placeholder: 'text'
   };
 
   if (enumOptions && enumOptions[colName]) {
@@ -86,15 +117,20 @@ export const TypedInput = ({
     );
   }
 
-  if (fkOptions && fkOptions[colName]) {
-    const options = fkOptions[colName].map(o => ({ label: o, value: o }));
+  const columnFkOpts =
+    fkOptions && fkOptions.find(opts => opts.from === colName);
+  if (columnFkOpts) {
+    const options = columnFkOpts.data.map(row => ({
+      label: row[columnFkOpts.displayName],
+      value: row[columnFkOpts.to]
+    }));
     delete standardInputProps.ref; // TODO
     return (
       <SearchableSelect
         {...standardInputProps}
         options={options}
         onChange={console.log}
-        // value={/* to do */}
+        value={'' /* to do */}
         bsClass={styles.insertBox}
         styleOverrides={searchableSelectStyles}
         filterOption="prefix"
@@ -112,7 +148,7 @@ export const TypedInput = ({
       <JsonInput
         standardProps={{
           ...standardInputProps,
-          defaultValue: JSON.stringify(prevValue),
+          defaultValue: JSON.stringify(prevValue)
         }}
         placeholderProp={getPlaceholder(colType)}
       />

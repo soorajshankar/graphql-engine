@@ -1,8 +1,17 @@
 import {
   READ_ONLY_RUN_SQL_QUERIES,
-  checkFeatureSupport,
+  checkFeatureSupport
 } from '../../../helpers/versionUtils';
 import { getRunSqlQuery } from '../../Common/utils/v1QueryUtils';
+import {
+  Schema,
+  AllSchemas,
+  Relationship,
+  ManulaRelationshipDef,
+  TableInfo,
+  SchemaPermission,
+  ForeignKeyConstraint
+} from './Types';
 
 export const INTEGER = 'integer';
 export const SERIAL = 'serial';
@@ -19,7 +28,7 @@ export const TIMETZ = 'timetz';
 export const BOOLEAN = 'boolean';
 export const TEXT = 'text';
 
-export const getPlaceholder = type => {
+export const getPlaceholder = (type: string) => {
   switch (type) {
     case TIMESTAMP:
       return new Date().toISOString();
@@ -45,10 +54,13 @@ export const tabNameMap = {
   edit: 'Edit Row',
   modify: 'Modify',
   relationships: 'Relationships',
-  permissions: 'Permissions',
+  permissions: 'Permissions'
 };
 
-export const ordinalColSort = (a, b) => {
+export const ordinalColSort = (
+  a: { ordinal_position: number },
+  b: { ordinal_position: number }
+) => {
   if (a.ordinal_position < b.ordinal_position) {
     return -1;
   }
@@ -58,7 +70,7 @@ export const ordinalColSort = (a, b) => {
   return 0;
 };
 
-const findFKConstraint = (curTable, column) => {
+const findFKConstraint = (curTable: Schema, column: any[]) => {
   const fkConstraints = curTable.foreign_key_constraints;
   return fkConstraints.find(
     fk =>
@@ -67,7 +79,7 @@ const findFKConstraint = (curTable, column) => {
   );
 };
 
-const findOppFKConstraint = (curTable, column) => {
+const findOppFKConstraint = (curTable: Schema, column: string[]) => {
   const fkConstraints = curTable.opp_foreign_key_constraints;
   return fkConstraints.find(
     fk =>
@@ -76,12 +88,22 @@ const findOppFKConstraint = (curTable, column) => {
   );
 };
 
-export const findTableFromRel = (schemas, curTable, rel) => {
-  let rTable = null;
+export const findTableFromRel = (
+  schemas: AllSchemas,
+  curTable: Schema,
+  rel: Relationship
+) => {
+  let rTable:
+    | null
+    | string
+    | ManulaRelationshipDef['manual_configuration']['remote_table'] = null;
   let rSchema = 'public';
 
   // for view
-  if (rel.rel_def.manual_configuration !== undefined) {
+  if (
+    'manual_configuration' in rel.rel_def &&
+    rel.rel_def.manual_configuration !== undefined
+  ) {
     rTable = rel.rel_def.manual_configuration.remote_table;
     if (rTable.schema) {
       rSchema = rTable.schema;
@@ -90,7 +112,10 @@ export const findTableFromRel = (schemas, curTable, rel) => {
   }
 
   // for table
-  if (rel.rel_def.foreign_key_constraint_on !== undefined) {
+  if (
+    'foreign_key_constraint_on' in rel.rel_def &&
+    rel.rel_def.foreign_key_constraint_on !== undefined
+  ) {
     // for object relationship
     if (rel.rel_type === 'object') {
       const column = [rel.rel_def.foreign_key_constraint_on];
@@ -115,66 +140,83 @@ export const findTableFromRel = (schemas, curTable, rel) => {
   );
 };
 
-export const findAllFromRel = (schemas, curTable, rel) => {
-  const relMeta = {
-    relName: rel.rel_name,
-    lTable: rel.table_name,
-    lSchema: rel.table_schema,
-    isObjRel: rel.rel_type === 'object',
-    lcol: null,
-    rcol: null,
-    rTable: null,
-    rSchema: null,
-  };
+export const findAllFromRel = (
+  _schemas: AllSchemas,
+  curTable: Schema,
+  rel: Relationship
+) => {
+  let relName = rel.rel_name;
+  let lTable = rel.table_name;
+  let lSchema = rel.table_schema;
+  let isObjRel = rel.rel_type === 'object';
+  let lcol: any[] | null = null;
+  let rcol = null;
+  let rTable = null;
+  let rSchema = null;
 
   // for view
-  if (rel.rel_def.manual_configuration !== undefined) {
+  if (
+    'manual_configuration' in rel.rel_def &&
+    rel.rel_def.manual_configuration !== undefined
+  ) {
     const rTableConfig = rel.rel_def.manual_configuration.remote_table;
     if (rTableConfig.schema) {
-      relMeta.rTable = rTableConfig.name;
-      relMeta.rSchema = rTableConfig.schema;
+      rTable = rTableConfig.name;
+      rSchema = rTableConfig.schema;
     } else {
-      relMeta.rTable = rTableConfig;
-      relMeta.rSchema = 'public';
+      rTable = rTableConfig;
+      rSchema = 'public';
     }
     const columnMapping = rel.rel_def.manual_configuration.column_mapping;
-    relMeta.lcol = Object.keys(columnMapping);
-    relMeta.rcol = relMeta.lcol.map(column => columnMapping[column]);
+    lcol = Object.keys(columnMapping);
+    rcol = lcol.map(column => columnMapping[column]);
   }
 
   // for table
-  const foreignKeyConstraintOn = rel.rel_def.foreign_key_constraint_on;
-  if (foreignKeyConstraintOn !== undefined) {
+  if (
+    'foreign_key_constraint_on' in rel.rel_def &&
+    rel.rel_def.foreign_key_constraint_on !== undefined
+  ) {
     // for object relationship
+    const foreignKeyConstraintOn = rel.rel_def.foreign_key_constraint_on;
     if (rel.rel_type === 'object') {
-      relMeta.lcol = [foreignKeyConstraintOn];
-      const fkc = findFKConstraint(curTable, relMeta.lcol);
+      lcol = [foreignKeyConstraintOn];
+      const fkc = findFKConstraint(curTable, lcol);
       if (fkc) {
-        relMeta.rTable = fkc.ref_table;
-        relMeta.rSchema = fkc.ref_table_table_schema;
-        relMeta.rcol = [fkc.column_mapping[relMeta.lcol]];
+        rTable = fkc.ref_table;
+        rSchema = fkc.ref_table_table_schema;
+        rcol = [fkc.column_mapping[lcol[0]]]; // todo: test this
       }
     }
 
     // for array relationship
     if (rel.rel_type === 'array') {
-      relMeta.rcol = [foreignKeyConstraintOn.column];
+      rcol = [foreignKeyConstraintOn.column];
       const rTableConfig = foreignKeyConstraintOn.table;
       if (rTableConfig.schema) {
-        relMeta.rTable = rTableConfig.name;
-        relMeta.rSchema = rTableConfig.schema;
+        rTable = rTableConfig.name;
+        rSchema = rTableConfig.schema;
       } else {
-        relMeta.rTable = rTableConfig;
-        relMeta.rSchema = 'public';
+        rTable = rTableConfig;
+        rSchema = 'public';
       }
-      const rfkc = findOppFKConstraint(curTable, relMeta.rcol);
-      relMeta.lcol = [rfkc.column_mapping[relMeta.rcol]];
+      const rfkc = findOppFKConstraint(curTable, rcol);
+      lcol = [rfkc!.column_mapping[rcol[0]]]; // todo: test this
     }
   }
-  return relMeta;
+  return {
+    relName,
+    lTable,
+    lSchema,
+    isObjRel,
+    lcol,
+    rcol,
+    rTable,
+    rSchema
+  };
 };
 
-export const getIngForm = string => {
+export const getIngForm = (string: string) => {
   return (
     (string[string.length - 1] === 'e'
       ? string.slice(0, string.length - 1)
@@ -182,7 +224,7 @@ export const getIngForm = string => {
   );
 };
 
-export const getEdForm = string => {
+export const getEdForm = (string: string) => {
   return (
     (string[string.length - 1] === 'e'
       ? string.slice(0, string.length - 1)
@@ -190,27 +232,31 @@ export const getEdForm = string => {
   );
 };
 
-export const escapeRegExp = string => {
+export const escapeRegExp = (string: string) => {
   return string.replace(/([.*+?^${}()|[\]\\])/g, '\\$1');
 };
 
-export const getTableName = t => {
-  const typ = typeof t;
-  if (typ === 'string') {
+export const getTableName = (t: { name?: string } | string) => {
+  if (typeof t === 'string') {
     return t;
-  } else if (typ === 'object') {
+  } else if (typeof t === 'object') {
     return 'name' in t ? t.name : '';
   }
   return '';
 };
 
-export const fetchTrackedTableListQuery = options => {
-  const query = {
+type Options = {
+  tables: TableInfo[];
+  schemas: AllSchemas;
+};
+
+export const fetchTrackedTableListQuery = (options: Options) => {
+  const query: Record<string, any> = {
     type: 'select',
     args: {
       table: {
         name: 'hdb_table',
-        schema: 'hdb_catalog',
+        schema: 'hdb_catalog'
       },
       columns: [
         'table_schema',
@@ -219,39 +265,39 @@ export const fetchTrackedTableListQuery = options => {
         'configuration',
         {
           name: 'primary_key',
-          columns: ['*'],
+          columns: ['*']
         },
         {
           name: 'relationships',
-          columns: ['*'],
+          columns: ['*']
         },
         {
           name: 'permissions',
-          columns: ['*'],
+          columns: ['*']
         },
         {
           name: 'unique_constraints',
-          columns: ['*'],
+          columns: ['*']
         },
         {
           name: 'check_constraints',
           columns: ['*'],
           order_by: {
             column: 'constraint_name',
-            type: 'asc',
-          },
+            type: 'asc'
+          }
         },
         {
           name: 'computed_fields',
           columns: ['*'],
           order_by: {
             column: 'computed_field_name',
-            type: 'asc',
-          },
-        },
+            type: 'asc'
+          }
+        }
       ],
-      order_by: [{ column: 'table_name', type: 'asc' }],
-    },
+      order_by: [{ column: 'table_name', type: 'asc' }]
+    }
   };
 
   if (
@@ -259,13 +305,13 @@ export const fetchTrackedTableListQuery = options => {
     (options.tables && options.tables.length !== 0)
   ) {
     query.where = {
-      $or: [],
+      $or: []
     };
   }
   if (options.schemas) {
     options.schemas.forEach(schemaName => {
       query.where.$or.push({
-        table_schema: schemaName,
+        table_schema: schemaName
       });
     });
   }
@@ -273,7 +319,7 @@ export const fetchTrackedTableListQuery = options => {
     options.tables.forEach(tableInfo => {
       query.where.$or.push({
         table_schema: tableInfo.table_schema,
-        table_name: tableInfo.table_name,
+        table_name: tableInfo.table_name
       });
     });
   }
@@ -281,10 +327,10 @@ export const fetchTrackedTableListQuery = options => {
   return query;
 };
 
-const generateWhereClause = options => {
+const generateWhereClause = (options: Options) => {
   let whereClause = '';
 
-  const whereCondtions = [];
+  const whereCondtions: string[] = [];
   if (options.schemas) {
     options.schemas.forEach(schemaName => {
       whereCondtions.push(`(ist.table_schema='${schemaName}')`);
@@ -312,7 +358,7 @@ const generateWhereClause = options => {
   return whereClause;
 };
 
-export const fetchTrackedTableFkQuery = options => {
+export const fetchTrackedTableFkQuery = (options: Options) => {
   const whereQuery = generateWhereClause(options);
 
   const runSql = `select 
@@ -343,7 +389,7 @@ FROM
   );
 };
 
-export const fetchTrackedTableReferencedFkQuery = options => {
+export const fetchTrackedTableReferencedFkQuery = (options: Options) => {
   const whereQuery = generateWhereClause(options);
 
   const runSql = `select 
@@ -377,7 +423,7 @@ FROM
   );
 };
 
-export const fetchTableListQuery = options => {
+export const fetchTableListQuery = (options: Options) => {
   const whereQuery = generateWhereClause(options);
 
   // TODO: optimise this. Multiple OUTER JOINS causes data bloating
@@ -455,12 +501,12 @@ FROM
 };
 
 export const mergeLoadSchemaData = (
-  infoSchemaTableData,
-  hdbTableData,
-  fkData,
-  refFkData
+  infoSchemaTableData: AllSchemas,
+  hdbTableData: AllSchemas,
+  fkData: ForeignKeyConstraint[],
+  refFkData: Array<{ ref_table_table_schema: string; ref_table: string }>
 ) => {
-  const _mergedTableData = [];
+  const _mergedTableData: AllSchemas = [];
 
   infoSchemaTableData.forEach(infoSchemaTableInfo => {
     const _tableSchema = infoSchemaTableInfo.table_schema;
@@ -478,26 +524,26 @@ export const mergeLoadSchemaData = (
     const _triggers = infoSchemaTableInfo.triggers; // TODO: get from v1/query
     const _viewInfo = infoSchemaTableInfo.view_info; // TODO: get from v1/query
 
-    let _primaryKey = null;
-    let _relationships = [];
-    let _permissions = [];
+    let _primaryKey: Schema['primary_key'] = null;
+    let _relationships: Relationship[] = [];
+    let _permissions: SchemaPermission[] = [];
     let _uniqueConstraints = [];
-    let _fkConstraints = [];
-    let _refFkConstraints = [];
+    let _fkConstraints: ForeignKeyConstraint[] = [];
+    let _refFkConstraints: any = [];
     let _isEnum = false;
     let _checkConstraints = [];
     let _configuration = {};
     let _computed_fields = [];
 
     if (_isTableTracked) {
-      _primaryKey = trackedTableInfo.primary_key;
-      _relationships = trackedTableInfo.relationships;
-      _permissions = trackedTableInfo.permissions;
-      _uniqueConstraints = trackedTableInfo.unique_constraints;
-      _isEnum = trackedTableInfo.is_enum;
-      _checkConstraints = trackedTableInfo.check_constraints;
-      _configuration = trackedTableInfo.configuration;
-      _computed_fields = trackedTableInfo.computed_fields;
+      _primaryKey = trackedTableInfo!.primary_key;
+      _relationships = trackedTableInfo!.relationships;
+      _permissions = trackedTableInfo!.permissions;
+      _uniqueConstraints = trackedTableInfo!.unique_constraints;
+      _isEnum = trackedTableInfo!.is_enum;
+      _checkConstraints = trackedTableInfo!.check_constraints;
+      _configuration = trackedTableInfo!.configuration;
+      _computed_fields = trackedTableInfo!.computed_fields;
 
       _fkConstraints = fkData.filter(
         fk => fk.table_schema === _tableSchema && fk.table_name === _tableName
@@ -528,7 +574,7 @@ export const mergeLoadSchemaData = (
       view_info: _viewInfo,
       is_enum: _isEnum,
       configuration: _configuration,
-      computed_fields: _computed_fields,
+      computed_fields: _computed_fields
     };
 
     _mergedTableData.push(_mergedInfo);
@@ -542,74 +588,74 @@ export const commonDataTypes = [
     name: 'Integer',
     value: 'integer',
     description: 'signed four-byte integer',
-    hasuraDatatype: 'integer',
+    hasuraDatatype: 'integer'
   },
   {
     name: 'Integer (auto-increment)',
     value: 'serial',
     description: 'autoincrementing four-byte integer',
-    hasuraDatatype: null,
+    hasuraDatatype: null
   },
   {
     name: 'Text',
     value: 'text',
     description: 'variable-length character string',
-    hasuraDatatype: 'text',
+    hasuraDatatype: 'text'
   },
   {
     name: 'Boolean',
     value: 'boolean',
     description: 'logical Boolean (true/false)',
-    hasuraDatatype: 'boolean',
+    hasuraDatatype: 'boolean'
   },
   {
     name: 'Numeric',
     value: 'numeric',
     description: 'exact numeric of selected precision',
-    hasuraDatatype: 'numeric',
+    hasuraDatatype: 'numeric'
   },
   {
     name: 'Timestamp',
     value: 'timestamptz',
     description: 'date and time, including time zone',
-    hasuraDatatype: 'timestamp with time zone',
+    hasuraDatatype: 'timestamp with time zone'
   },
   {
     name: 'Time',
     value: 'timetz',
     description: 'time of day (no time zone)',
-    hasuraDatatype: 'time with time zone',
+    hasuraDatatype: 'time with time zone'
   },
   {
     name: 'Date',
     value: 'date',
     description: 'calendar date (year, month, day)',
-    hasuraDatatype: 'date',
+    hasuraDatatype: 'date'
   },
   {
     name: 'UUID',
     value: 'uuid',
     description: 'universal unique identifier',
-    hasuraDatatype: 'uuid',
+    hasuraDatatype: 'uuid'
   },
   {
     name: 'JSONB',
     value: 'jsonb',
     description: 'binary format JSON data',
-    hasuraDatatype: 'jsonb',
+    hasuraDatatype: 'jsonb'
   },
   {
     name: 'Big Integer',
     value: 'bigint',
     description: 'signed eight-byte integer',
-    hasuraDatatype: 'bigint',
+    hasuraDatatype: 'bigint'
   },
   {
     name: 'Big Integer (auto-increment)',
     value: 'bigserial',
     description: 'autoincrementing eight-byte integer',
-    hasuraDatatype: null,
-  },
+    hasuraDatatype: null
+  }
 ];
 
 /*
@@ -653,5 +699,80 @@ ORDER BY t.typname ASC;
 
 const postgresFunctionTester = /.*\(\)$/gm;
 
-export const isPostgresFunction = str =>
+export const isPostgresFunction = (str: string) =>
   new RegExp(postgresFunctionTester).test(str);
+
+type Mapping = {
+  columnName: string;
+  refTableName: string;
+  refColumnName: string;
+  displayColumnName: string;
+};
+
+type DisplayConfig = {
+  tableName: string;
+  schemaName: string;
+  constraintName: string;
+  mappings: Mapping[];
+};
+
+type ConsoleOpts = {
+  telemetryNotificationShown: boolean;
+  fkDisplayNames: DisplayConfig[];
+};
+
+const configsEqual = (config1: DisplayConfig, config2: DisplayConfig) => {
+  return (
+    config1.tableName === config2.tableName &&
+    config1.schemaName === config2.schemaName &&
+    config1.constraintName === config2.constraintName
+  );
+};
+
+export const mergeDisplayConfig = (
+  config: DisplayConfig,
+  opts: ConsoleOpts
+) => {
+  let newDisplaConfigs: ConsoleOpts['fkDisplayNames'];
+
+  if (!opts.fkDisplayNames || !opts.fkDisplayNames.length) {
+    newDisplaConfigs = [config];
+  } else {
+    let configExists = false;
+    newDisplaConfigs = opts.fkDisplayNames.map(currConfig => {
+      if (configsEqual(currConfig, config)) {
+        configExists = true;
+        return {
+          ...currConfig,
+          mappings: config.mappings
+        };
+      }
+      return currConfig;
+    });
+    if (!configExists) {
+      newDisplaConfigs = [...opts.fkDisplayNames, config];
+    }
+  }
+
+  return {
+    fkDisplayNames: newDisplaConfigs,
+    telemetryNotificationShown: opts.telemetryNotificationShown
+  };
+};
+
+export const createTableMappings = (
+  data: Array<Record<string, any>>,
+  mappings: Mapping[]
+) => {
+  let result = [];
+  for (let i = 0; i < data.length; ++i) {
+    result.push({
+      from: mappings[i].columnName,
+      to: mappings[i].refColumnName,
+      displayName: mappings[i].displayColumnName,
+      data: data[i]
+    });
+  }
+
+  return result;
+};

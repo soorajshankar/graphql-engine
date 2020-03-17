@@ -97,7 +97,7 @@ SearchableSelectBox.propTypes = {
   options: PropTypes.array.isRequired,
   bsClass: PropTypes.string,
   customStyle: PropTypes.object,
-  filterOption: PropTypes.object,
+  filterOption: PropTypes.string,
 };
 
 export default SearchableSelectBox;

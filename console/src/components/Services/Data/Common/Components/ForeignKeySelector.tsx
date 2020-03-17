@@ -1,20 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from '../../../../Common/TableCommon/Table.scss';
 import { fkViolationOnUpdate, fkViolationOnDelete } from '../TooltipMessages';
 import { updateSchemaInfo } from '../../DataActions';
 import Col from 'react-bootstrap/lib/Col';
 import Row from 'react-bootstrap/lib/Row';
 import ToolTip from '../../../../Common/Tooltip/Tooltip';
+import { AllSchemas } from '../../Types';
 
 const violiationActions = [
   'restrict',
   'no action',
   'cascade',
   'set null',
-  'set default',
+  'set default'
 ];
 
-const ForeignKeySelector = ({
+type ForeignKey = {
+  constraintName: string;
+  refSchemaName: string;
+  refTableName: string;
+  colMappings: [{ column: string; refColumn: string }];
+  onUpdate: string;
+  onDelete: string;
+};
+
+type Props = {
+  foreignKey: ForeignKey;
+  index: number;
+  foreignKeys: ForeignKey[];
+  orderedColumns: Array<{ name: string; index: number }>;
+  dispatch(action?: any): void;
+  setForeignKeys(keys: ForeignKey[]): void;
+  service: string;
+  schemaList: string[];
+  refTables: Record<string, string[]>;
+  displayColumnNames: string[];
+  setDisplayColumnNames: React.Dispatch<
+    React.SetStateAction<Record<string, string[]>>
+  >;
+};
+
+const ForeignKeySelector: React.FC<Props> = ({
   foreignKey,
   index,
   foreignKeys,
@@ -25,14 +51,16 @@ const ForeignKeySelector = ({
   schemaList,
   refTables,
   displayColumnNames,
-  setDisplayColumnNames,
+  setDisplayColumnNames
 }) => {
   const { refTableName, colMappings, refSchemaName } = foreignKey;
   const numOfFks = foreignKeys.length;
   const numColMappings = colMappings.length;
 
   const refSchemaSelect = () => {
-    const dispatchSetRefSchema = event => {
+    const dispatchSetRefSchema = (
+      event: React.ChangeEvent<HTMLSelectElement>
+    ) => {
       const newFks = JSON.parse(JSON.stringify(foreignKeys));
       if (newFks[index].refSchemaName !== event.target.value) {
         newFks[index].refTableName = '';
@@ -83,7 +111,9 @@ const ForeignKeySelector = ({
   // html for ref table dropdown
   const refTableSelect = () => {
     // dispatch action for setting reference table
-    const dispatchSetRefTable = event => {
+    const dispatchSetRefTable = (
+      event: React.ChangeEvent<HTMLSelectElement>
+    ) => {
       const newFks = JSON.parse(JSON.stringify(foreignKeys));
       if (newFks[index].refTableName !== event.target.value) {
         newFks[index].colMappings = [{ column: '', refColumn: '' }];
@@ -96,11 +126,11 @@ const ForeignKeySelector = ({
           colMappings: [
             {
               column: '',
-              refColumn: '',
-            },
+              refColumn: ''
+            }
           ],
           onUpdate: 'restrict',
-          onDelete: 'restrict',
+          onDelete: 'restrict'
         });
       }
       dispatch(setForeignKeys(newFks));
@@ -173,7 +203,7 @@ const ForeignKeySelector = ({
           const displayName = displayColumnNames[_i] || '';
 
           // dispatch action for setting column config
-          const dispatchSetCols = (key, value) => {
+          const dispatchSetCols = (key: string, value: string) => {
             const newFks = JSON.parse(JSON.stringify(foreignKeys));
             newFks[index].colMappings[_i][key] = value;
             if (
@@ -186,23 +216,29 @@ const ForeignKeySelector = ({
           };
 
           // dispatch action for setting the "from" column
-          const dispatchSetLcol = event => {
+          const dispatchSetLcol = (
+            event: React.ChangeEvent<HTMLSelectElement>
+          ) => {
             dispatchSetCols('column', event.target.value);
           };
 
           // dispatch action for setting the "to" column
-          const dispatchSetRcol = event => {
+          const dispatchSetRcol = (
+            event: React.ChangeEvent<HTMLSelectElement>
+          ) => {
             dispatchSetCols('refColumn', event.target.value);
           };
 
-          const onDisplayColumnNameChange = event => {
+          const onDisplayColumnNameChange = (
+            event: React.ChangeEvent<HTMLSelectElement>
+          ) => {
             // TODO: expose this from outer component?\
             event.persist();
             const newColumnNames = [...displayColumnNames];
             newColumnNames[_i] = event.target.value;
             setDisplayColumnNames(prev => ({
               ...prev,
-              [foreignKey.constraintName]: newColumnNames,
+              [foreignKey.constraintName]: newColumnNames
             }));
           };
 
@@ -211,11 +247,16 @@ const ForeignKeySelector = ({
             const newFks = JSON.parse(JSON.stringify(foreignKeys));
             const newColMapping = [
               ...colMappings.slice(0, _i),
-              ...colMappings.slice(_i + 1),
+              ...colMappings.slice(_i + 1)
             ];
             newFks[index].colMappings = newColMapping;
             dispatch(setForeignKeys(newFks));
-            setDisplayColumnNames(prev => prev.filter((_, idx) => idx !== _i));
+            setDisplayColumnNames(prev => ({
+              ...prev,
+              [foreignKey.constraintName]: prev[
+                foreignKey.constraintName
+              ].filter((_, idx) => idx !== _i)
+            }));
           };
 
           // show remove icon for all column pairs except last
@@ -322,7 +363,7 @@ const ForeignKeySelector = ({
       ? 'Please select the reference table and the column configuration'
       : undefined;
     // Generate radios for violation actions
-    const radios = action => {
+    const radios = (action: 'onUpdate' | 'onDelete') => {
       const selected = foreignKey[action];
       return (
         <div className={'row'}>

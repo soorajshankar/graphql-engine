@@ -32,7 +32,12 @@ import {
 import _push from './push';
 import { getFetchAllRolesQuery } from '../../Common/utils/v1QueryUtils';
 
-import { fetchColumnTypesQuery, fetchColumnDefaultFunctions } from './utils';
+import {
+  fetchColumnTypesQuery,
+  fetchColumnDefaultFunctions,
+  mergeDisplayConfig,
+  createTableMappings,
+} from './utils';
 
 import { fetchColumnCastsQuery, convertArrayToJson } from './TableModify/utils';
 
@@ -80,7 +85,13 @@ const initQueries = {
         schema: 'information_schema',
       },
       columns: ['schema_name'],
-      order_by: [{ column: 'schema_name', type: 'asc', nulls: 'last' }],
+      order_by: [
+        {
+          column: 'schema_name',
+          type: 'asc',
+          nulls: 'last',
+        },
+      ],
       where: {
         schema_name: {
           $nin: [
@@ -101,7 +112,13 @@ const initQueries = {
         schema: 'hdb_catalog',
       },
       columns: ['function_name', 'function_schema', 'is_system_defined'],
-      order_by: [{ column: 'function_name', type: 'asc', nulls: 'last' }],
+      order_by: [
+        {
+          column: 'function_name',
+          type: 'asc',
+          nulls: 'last',
+        },
+      ],
       where: {
         function_schema: '', // needs to be set later
       },
@@ -129,7 +146,13 @@ const initQueries = {
           columns: ['table_schema', 'table_name'],
         },
       ],
-      order_by: [{ column: 'function_name', type: 'asc', nulls: 'last' }],
+      order_by: [
+        {
+          column: 'function_name',
+          type: 'asc',
+          nulls: 'last',
+        },
+      ],
       where: {
         function_schema: '', // needs to be set later
         has_variadic: false,
@@ -173,7 +196,13 @@ const initQueries = {
           columns: ['table_schema', 'table_name'],
         },
       ],
-      order_by: [{ column: 'function_name', type: 'asc', nulls: 'last' }],
+      order_by: [
+        {
+          column: 'function_name',
+          type: 'asc',
+          nulls: 'last',
+        },
+      ],
       where: {
         function_schema: '', // needs to be set later
         $not: {
@@ -241,45 +270,49 @@ const getForeignKeyOptions = () => {
     const {
       tables: { consoleOpts, currentTable, currentSchema },
     } = getState();
-    if (!consoleOpts || !consoleOpts.displayConfig) return;
+    if (!consoleOpts || !consoleOpts.fkDisplayNames) return;
 
     // TODO: change name
-    const currentTableMappings = consoleOpts.displayConfig.find(
-      m => m.tableName === currentTable && m.schemaName === currentSchema
-    );
-    if (!currentTableMappings || !currentTableMappings.mappings) return;
+    // there can be many of them
+    const currentTableMappings = consoleOpts.fkDisplayNames
+      .filter(
+        m => m.tableName === currentTable && m.schemaName === currentSchema
+      )
+      .map(opts => opts.mappings)
+      .reduce((acc, maps) => [...acc, ...maps], []);
+    if (!currentTableMappings || !currentTableMappings.length) return;
 
-    console.log({ currentTableMappings });
+    const req = {
+      // TODO: move to utils
+      type: 'bulk',
+      args: currentTableMappings.map(m => {
+        return {
+          type: 'select',
+          args: {
+            table: {
+              name: m.refTableName,
+              schema: currentSchema,
+            },
+            columns: [m.displayColumnName, m.refColumnName],
+          },
+        };
+      }),
+    };
 
     const url = Endpoints.getSchema;
     const options = {
       credentials: globalCookiePolicy,
       method: 'POST',
       headers: dataHeaders(getState),
-      body: JSON.stringify({
-        // TODO: move to utils
-        type: 'bulk',
-        args: currentTableMappings.mappings.map(m => ({
-          type: 'select',
-          args: {
-            table: {
-              name: m.refTableName,
-              schema: currentTableMappings.schemaName,
-            },
-            columns: [m.displayColumnName, m.refColumnName],
-          },
-        })),
-      }),
+      body: JSON.stringify(req),
     };
 
     return dispatch(requestAction(url, options)).then(
       data => {
-        console.log({ data, currentTableMappings });
         if (data.length !== 0) {
           dispatch({
             type: SET_FK_MAPPINGS,
-            // TODO: fix me
-            data: data[0].map(d => Object.values(d)[0]),
+            data: createTableMappings(data, currentTableMappings),
           });
         }
       },
@@ -321,7 +354,10 @@ const fetchTrackedFunctions = () => {
           );
         }
 
-        dispatch({ type: LOAD_TRACKED_FUNCTIONS, data: consistentFunctions });
+        dispatch({
+          type: LOAD_TRACKED_FUNCTIONS,
+          data: consistentFunctions,
+        });
       },
       error => {
         console.error('Failed to load schema ' + JSON.stringify(error));
@@ -469,7 +505,10 @@ const fetchDataInit = () => (dispatch, getState) => {
 
   return dispatch(requestAction(url, options)).then(
     data => {
-      dispatch({ type: FETCH_SCHEMA_LIST, schemaList: data[0] });
+      dispatch({
+        type: FETCH_SCHEMA_LIST,
+        schemaList: data[0],
+      });
       dispatch(updateSchemaInfo());
     },
     error => {
@@ -505,7 +544,10 @@ const fetchFunctionInit = (schema = null) => (dispatch, getState) => {
   return dispatch(requestAction(url, options)).then(
     data => {
       dispatch({ type: LOAD_FUNCTIONS, data: data[0] });
-      dispatch({ type: LOAD_NON_TRACKABLE_FUNCTIONS, data: data[1] });
+      dispatch({
+        type: LOAD_NON_TRACKABLE_FUNCTIONS,
+        data: data[1],
+      });
 
       let consistentFunctions = data[2];
       const { inconsistentObjects } = getState().metadata;
@@ -516,7 +558,10 @@ const fetchFunctionInit = (schema = null) => (dispatch, getState) => {
           'functions'
         );
       }
-      dispatch({ type: LOAD_TRACKED_FUNCTIONS, data: consistentFunctions });
+      dispatch({
+        type: LOAD_TRACKED_FUNCTIONS,
+        data: consistentFunctions,
+      });
     },
     error => {
       console.error('Failed to fetch schema ' + JSON.stringify(error));
@@ -530,7 +575,10 @@ const updateCurrentSchema = (schemaName, redirect = true) => dispatch => {
   }
 
   Promise.all([
-    dispatch({ type: UPDATE_CURRENT_SCHEMA, currentSchema: schemaName }),
+    dispatch({
+      type: UPDATE_CURRENT_SCHEMA,
+      currentSchema: schemaName,
+    }),
     dispatch(setUntrackedRelations()),
     dispatch(fetchFunctionInit()),
     dispatch(updateSchemaInfo()),
@@ -548,7 +596,10 @@ const fetchSchemaList = () => (dispatch, getState) => {
   };
   return dispatch(requestAction(url, options)).then(
     data => {
-      dispatch({ type: FETCH_SCHEMA_LIST, schemaList: data });
+      dispatch({
+        type: FETCH_SCHEMA_LIST,
+        schemaList: data,
+      });
     },
     error => {
       console.error('Failed to fetch schema ' + JSON.stringify(error));
@@ -556,7 +607,10 @@ const fetchSchemaList = () => (dispatch, getState) => {
   );
 };
 
-const setTable = tableName => ({ type: SET_TABLE, tableName });
+const setTable = tableName => ({
+  type: SET_TABLE,
+  tableName,
+});
 
 /* **********Shared functions between table actions********* */
 
@@ -715,14 +769,6 @@ const fetchColumnTypeInfo = () => {
   };
 };
 
-const equalTableOpts = (displayConfig1, displayConfig2) => {
-  return (
-    displayConfig1.tableName === displayConfig2.tableName &&
-    displayConfig1.schemaName === displayConfig2.schemaName &&
-    displayConfig1.constraintName === displayConfig2.constraintName
-  );
-};
-
 /**
  * @typedef Mapping
  * @param {string} refTableName
@@ -741,34 +787,10 @@ const setConsoleFKOptions = displayConfig => (dispatch, getState) => {
   const url = Endpoints.getSchema;
 
   // TODO: don't use telemetry
-  const { hasura_uuid, console_opts } = getState().telemetry;
+  const { hasura_uuid } = getState().telemetry;
+  const { consoleOpts } = getState().tables;
 
-  let newDisplayConfigs = [];
-  if (!console_opts.fkDisplayNames || !console_opts.fkDisplayNames.length) {
-    newDisplayConfigs = [displayConfig];
-  } else {
-    const currentTableOpts = console_opts.fkDisplayNames.find(opts =>
-      equalTableOpts(opts, displayConfig)
-    );
-    if (currentTableOpts) {
-      newDisplayConfigs = console_opts.fkDisplayNames.map(opts => {
-        if (equalTableOpts(opts, displayConfig)) {
-          return {
-            ...opts,
-            mappings: displayConfig.mappings,
-          };
-        }
-        return opts;
-      });
-    } else {
-      newDisplayConfigs = [...console_opts.fkDisplayNames, displayConfig];
-    }
-  }
-
-  const consoleState = {
-    ...console_opts,
-    fkDisplayNames: newDisplayConfigs,
-  };
+  const newConsoleState = mergeDisplayConfig(displayConfig, consoleOpts);
 
   const options = {
     credentials: globalCookiePolicy,
@@ -777,7 +799,7 @@ const setConsoleFKOptions = displayConfig => (dispatch, getState) => {
     body: JSON.stringify(
       getRunSqlQuery(
         `update hdb_catalog.hdb_version set console_state = '${JSON.stringify(
-          consoleState
+          newConsoleState
         )}' where hasura_uuid='${hasura_uuid}';`
       )
     ),
@@ -900,14 +922,21 @@ const dataReducer = (state = defaultState, action) => {
     case FETCH_SCHEMA_LIST:
       return { ...state, schemaList: action.schemaList };
     case SET_CONSISTENT_SCHEMA:
-      return { ...state, allSchemas: action.data, listingSchemas: action.data };
+      return {
+        ...state,
+        allSchemas: action.data,
+        listingSchemas: action.data,
+      };
     case SET_CONSISTENT_FUNCTIONS:
       return {
         ...state,
         trackedFunctions: action.data,
       };
     case UPDATE_CURRENT_SCHEMA:
-      return { ...state, currentSchema: action.currentSchema };
+      return {
+        ...state,
+        currentSchema: action.currentSchema,
+      };
     case ADMIN_SECRET_ERROR:
       return { ...state, adminSecretError: action.data };
     case UPDATE_DATA_HEADERS:
@@ -944,8 +973,12 @@ const dataReducer = (state = defaultState, action) => {
       return {
         ...state,
         columnDataTypes: [...defaultState.columnDataTypes],
-        columnDefaultFunctions: { ...defaultState.columnDefaultFunctions },
-        columnTypeCasts: { ...defaultState.columnTypeCasts },
+        columnDefaultFunctions: {
+          ...defaultState.columnDefaultFunctions,
+        },
+        columnTypeCasts: {
+          ...defaultState.columnTypeCasts,
+        },
         columnDataTypeInfoErr: defaultState.columnDataTypeInfoErr,
       };
     case SET_HASURA_OPTS:

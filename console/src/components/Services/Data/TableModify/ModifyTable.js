@@ -94,8 +94,6 @@ class ModifyTable extends React.Component {
       consoleOpts,
     } = this.props;
 
-    console.log({ consoleOpts });
-
     const dataTypeIndexMap = getAllDataTypeMap(dataTypes);
 
     const table = findTable(
