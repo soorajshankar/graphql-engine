@@ -84,3 +84,12 @@ export interface Schema extends TableInfo {
 }
 
 export type AllSchemas = Schema[];
+
+export type ForeignKey = {
+  constraintName: string;
+  refSchemaName: string;
+  refTableName: string;
+  colMappings: [{ column: string; refColumn: string }];
+  onUpdate: string;
+  onDelete: string;
+};

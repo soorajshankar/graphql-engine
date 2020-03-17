@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styles from '../../../../Common/TableCommon/Table.scss';
 import { fkViolationOnUpdate, fkViolationOnDelete } from '../TooltipMessages';
 import { updateSchemaInfo } from '../../DataActions';
 import Col from 'react-bootstrap/lib/Col';
 import Row from 'react-bootstrap/lib/Row';
 import ToolTip from '../../../../Common/Tooltip/Tooltip';
-import { AllSchemas } from '../../Types';
+import { ForeignKey, AllSchemas } from '../../Types';
 
 const violiationActions = [
   'restrict',
@@ -14,15 +14,6 @@ const violiationActions = [
   'set null',
   'set default'
 ];
-
-type ForeignKey = {
-  constraintName: string;
-  refSchemaName: string;
-  refTableName: string;
-  colMappings: [{ column: string; refColumn: string }];
-  onUpdate: string;
-  onDelete: string;
-};
 
 type Props = {
   foreignKey: ForeignKey;
@@ -329,8 +320,8 @@ const ForeignKeySelector: React.FC<Props> = ({
                   className={`form-control ${styles.select} ${styles.wd100Percent}`}
                   value={displayName}
                   onChange={onDisplayColumnNameChange}
-                  disabled={!refTableName}
-                  title={'' /** TO DO */}
+                  disabled={!refTableName || !lc || !rc}
+                  title="Select display column"
                   data-test={`foreign-key-${index}-rcol-${_i}`}
                 >
                   {!displayName && (

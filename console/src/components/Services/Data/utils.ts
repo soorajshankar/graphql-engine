@@ -10,7 +10,8 @@ import {
   ManulaRelationshipDef,
   TableInfo,
   SchemaPermission,
-  ForeignKeyConstraint
+  ForeignKeyConstraint,
+  ForeignKey
 } from './Types';
 
 export const INTEGER = 'integer';
@@ -775,4 +776,44 @@ export const createTableMappings = (
   }
 
   return result;
+};
+
+export const getDisplayNamesPerKey = (
+  consoleOpts: ConsoleOpts,
+  tableSchema: Schema,
+  fkModify: ForeignKey[]
+) => {
+  if (!consoleOpts || !consoleOpts.fkDisplayNames) return;
+
+  const currentTableMappings = consoleOpts.fkDisplayNames.filter(
+    m =>
+      m.tableName === tableSchema.table_name &&
+      m.schemaName === tableSchema.table_schema
+  );
+
+  // TODO: explain why I'm doing this
+  const newConfig: Record<string, string[]> = {};
+  if (fkModify && fkModify.length > 0) {
+    fkModify.forEach(fk => {
+      const sortedDisplayColumnNames: string[] = [];
+      const currentFkMappings = currentTableMappings.find(
+        opts => opts.constraintName === fk.constraintName
+      );
+      console.log({ currentFkMappings });
+      if (!currentFkMappings) return;
+      fk.colMappings.forEach(colMapping => {
+        const newDN = currentFkMappings.mappings.find(
+          m =>
+            // m.columnName === colMapping.column && why there is number
+            m.refColumnName === colMapping.refColumn &&
+            m.refTableName === fk.refTableName
+        );
+        if (newDN) {
+          sortedDisplayColumnNames.push(newDN.displayColumnName);
+        }
+      });
+      newConfig[fk.constraintName] = sortedDisplayColumnNames;
+    });
+  }
+  return newConfig;
 };
