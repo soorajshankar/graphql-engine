@@ -1,6 +1,6 @@
 import {
   READ_ONLY_RUN_SQL_QUERIES,
-  checkFeatureSupport
+  checkFeatureSupport,
 } from '../../../helpers/versionUtils';
 import { getRunSqlQuery } from '../../Common/utils/v1QueryUtils';
 import {
@@ -11,8 +11,9 @@ import {
   TableInfo,
   SchemaPermission,
   ForeignKeyConstraint,
-  ForeignKey
+  ForeignKey,
 } from './Types';
+import { equalTableDefs } from '../../Common/utils/pgUtils';
 
 export const INTEGER = 'integer';
 export const SERIAL = 'serial';
@@ -55,7 +56,7 @@ export const tabNameMap = {
   edit: 'Edit Row',
   modify: 'Modify',
   relationships: 'Relationships',
-  permissions: 'Permissions'
+  permissions: 'Permissions',
 };
 
 export const ordinalColSort = (
@@ -146,10 +147,10 @@ export const findAllFromRel = (
   curTable: Schema,
   rel: Relationship
 ) => {
-  let relName = rel.rel_name;
-  let lTable = rel.table_name;
-  let lSchema = rel.table_schema;
-  let isObjRel = rel.rel_type === 'object';
+  const relName = rel.rel_name;
+  const lTable = rel.table_name;
+  const lSchema = rel.table_schema;
+  const isObjRel = rel.rel_type === 'object';
   let lcol: any[] | null = null;
   let rcol = null;
   let rTable = null;
@@ -213,7 +214,7 @@ export const findAllFromRel = (
     lcol,
     rcol,
     rTable,
-    rSchema
+    rSchema,
   };
 };
 
@@ -257,7 +258,7 @@ export const fetchTrackedTableListQuery = (options: Options) => {
     args: {
       table: {
         name: 'hdb_table',
-        schema: 'hdb_catalog'
+        schema: 'hdb_catalog',
       },
       columns: [
         'table_schema',
@@ -266,39 +267,39 @@ export const fetchTrackedTableListQuery = (options: Options) => {
         'configuration',
         {
           name: 'primary_key',
-          columns: ['*']
+          columns: ['*'],
         },
         {
           name: 'relationships',
-          columns: ['*']
+          columns: ['*'],
         },
         {
           name: 'permissions',
-          columns: ['*']
+          columns: ['*'],
         },
         {
           name: 'unique_constraints',
-          columns: ['*']
+          columns: ['*'],
         },
         {
           name: 'check_constraints',
           columns: ['*'],
           order_by: {
             column: 'constraint_name',
-            type: 'asc'
-          }
+            type: 'asc',
+          },
         },
         {
           name: 'computed_fields',
           columns: ['*'],
           order_by: {
             column: 'computed_field_name',
-            type: 'asc'
-          }
-        }
+            type: 'asc',
+          },
+        },
       ],
-      order_by: [{ column: 'table_name', type: 'asc' }]
-    }
+      order_by: [{ column: 'table_name', type: 'asc' }],
+    },
   };
 
   if (
@@ -306,13 +307,13 @@ export const fetchTrackedTableListQuery = (options: Options) => {
     (options.tables && options.tables.length !== 0)
   ) {
     query.where = {
-      $or: []
+      $or: [],
     };
   }
   if (options.schemas) {
     options.schemas.forEach(schemaName => {
       query.where.$or.push({
-        table_schema: schemaName
+        table_schema: schemaName,
       });
     });
   }
@@ -320,7 +321,7 @@ export const fetchTrackedTableListQuery = (options: Options) => {
     options.tables.forEach(tableInfo => {
       query.where.$or.push({
         table_schema: tableInfo.table_schema,
-        table_name: tableInfo.table_name
+        table_name: tableInfo.table_name,
       });
     });
   }
@@ -575,7 +576,7 @@ export const mergeLoadSchemaData = (
       view_info: _viewInfo,
       is_enum: _isEnum,
       configuration: _configuration,
-      computed_fields: _computed_fields
+      computed_fields: _computed_fields,
     };
 
     _mergedTableData.push(_mergedInfo);
@@ -589,74 +590,74 @@ export const commonDataTypes = [
     name: 'Integer',
     value: 'integer',
     description: 'signed four-byte integer',
-    hasuraDatatype: 'integer'
+    hasuraDatatype: 'integer',
   },
   {
     name: 'Integer (auto-increment)',
     value: 'serial',
     description: 'autoincrementing four-byte integer',
-    hasuraDatatype: null
+    hasuraDatatype: null,
   },
   {
     name: 'Text',
     value: 'text',
     description: 'variable-length character string',
-    hasuraDatatype: 'text'
+    hasuraDatatype: 'text',
   },
   {
     name: 'Boolean',
     value: 'boolean',
     description: 'logical Boolean (true/false)',
-    hasuraDatatype: 'boolean'
+    hasuraDatatype: 'boolean',
   },
   {
     name: 'Numeric',
     value: 'numeric',
     description: 'exact numeric of selected precision',
-    hasuraDatatype: 'numeric'
+    hasuraDatatype: 'numeric',
   },
   {
     name: 'Timestamp',
     value: 'timestamptz',
     description: 'date and time, including time zone',
-    hasuraDatatype: 'timestamp with time zone'
+    hasuraDatatype: 'timestamp with time zone',
   },
   {
     name: 'Time',
     value: 'timetz',
     description: 'time of day (no time zone)',
-    hasuraDatatype: 'time with time zone'
+    hasuraDatatype: 'time with time zone',
   },
   {
     name: 'Date',
     value: 'date',
     description: 'calendar date (year, month, day)',
-    hasuraDatatype: 'date'
+    hasuraDatatype: 'date',
   },
   {
     name: 'UUID',
     value: 'uuid',
     description: 'universal unique identifier',
-    hasuraDatatype: 'uuid'
+    hasuraDatatype: 'uuid',
   },
   {
     name: 'JSONB',
     value: 'jsonb',
     description: 'binary format JSON data',
-    hasuraDatatype: 'jsonb'
+    hasuraDatatype: 'jsonb',
   },
   {
     name: 'Big Integer',
     value: 'bigint',
     description: 'signed eight-byte integer',
-    hasuraDatatype: 'bigint'
+    hasuraDatatype: 'bigint',
   },
   {
     name: 'Big Integer (auto-increment)',
     value: 'bigserial',
     description: 'autoincrementing eight-byte integer',
-    hasuraDatatype: null
-  }
+    hasuraDatatype: null,
+  },
 ];
 
 /*
@@ -745,7 +746,7 @@ export const mergeDisplayConfig = (
         configExists = true;
         return {
           ...currConfig,
-          mappings: config.mappings
+          mappings: config.mappings,
         };
       }
       return currConfig;
@@ -756,8 +757,22 @@ export const mergeDisplayConfig = (
   }
 
   return {
+    ...opts,
     fkDisplayNames: newDisplaConfigs,
-    telemetryNotificationShown: opts.telemetryNotificationShown
+  };
+};
+
+export const removeDisplayConfig = (
+  displayConfig: Omit<DisplayConfig, 'mappings'>,
+  opts: ConsoleOpts
+) => {
+  const newDisplaConfigs = opts.fkDisplayNames.filter(
+    config => !equalTableDefs(config, displayConfig)
+  );
+
+  return {
+    ...opts,
+    fkDisplayNames: newDisplaConfigs,
   };
 };
 
@@ -765,13 +780,13 @@ export const createTableMappings = (
   data: Array<Record<string, any>>,
   mappings: Mapping[]
 ) => {
-  let result = [];
+  const result = [];
   for (let i = 0; i < data.length; ++i) {
     result.push({
       from: mappings[i].columnName,
       to: mappings[i].refColumnName,
       displayName: mappings[i].displayColumnName,
-      data: data[i]
+      data: data[i],
     });
   }
 

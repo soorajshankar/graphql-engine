@@ -5,14 +5,14 @@ import { updateSchemaInfo } from '../../DataActions';
 import Col from 'react-bootstrap/lib/Col';
 import Row from 'react-bootstrap/lib/Row';
 import ToolTip from '../../../../Common/Tooltip/Tooltip';
-import { ForeignKey, AllSchemas } from '../../Types';
+import { ForeignKey } from '../../Types';
 
 const violiationActions = [
   'restrict',
   'no action',
   'cascade',
   'set null',
-  'set default'
+  'set default',
 ];
 
 type Props = {
@@ -26,9 +26,7 @@ type Props = {
   schemaList: string[];
   refTables: Record<string, string[]>;
   displayColumnNames: string[];
-  setDisplayColumnNames: React.Dispatch<
-    React.SetStateAction<Record<string, string[]>>
-  >;
+  setDisplayColumnNames(newNames: string[]): void;
 };
 
 const ForeignKeySelector: React.FC<Props> = ({
@@ -42,7 +40,7 @@ const ForeignKeySelector: React.FC<Props> = ({
   schemaList,
   refTables,
   displayColumnNames,
-  setDisplayColumnNames
+  setDisplayColumnNames,
 }) => {
   const { refTableName, colMappings, refSchemaName } = foreignKey;
   const numOfFks = foreignKeys.length;
@@ -117,11 +115,11 @@ const ForeignKeySelector: React.FC<Props> = ({
           colMappings: [
             {
               column: '',
-              refColumn: ''
-            }
+              refColumn: '',
+            },
           ],
           onUpdate: 'restrict',
-          onDelete: 'restrict'
+          onDelete: 'restrict',
         });
       }
       dispatch(setForeignKeys(newFks));
@@ -223,14 +221,10 @@ const ForeignKeySelector: React.FC<Props> = ({
           const onDisplayColumnNameChange = (
             event: React.ChangeEvent<HTMLSelectElement>
           ) => {
-            // TODO: expose this from outer component?\
             event.persist();
             const newColumnNames = [...displayColumnNames];
             newColumnNames[_i] = event.target.value;
-            setDisplayColumnNames(prev => ({
-              ...prev,
-              [foreignKey.constraintName]: newColumnNames
-            }));
+            setDisplayColumnNames(newColumnNames);
           };
 
           // dispatch action for removing a pair from column mapping
@@ -238,16 +232,13 @@ const ForeignKeySelector: React.FC<Props> = ({
             const newFks = JSON.parse(JSON.stringify(foreignKeys));
             const newColMapping = [
               ...colMappings.slice(0, _i),
-              ...colMappings.slice(_i + 1)
+              ...colMappings.slice(_i + 1),
             ];
             newFks[index].colMappings = newColMapping;
             dispatch(setForeignKeys(newFks));
-            setDisplayColumnNames(prev => ({
-              ...prev,
-              [foreignKey.constraintName]: prev[
-                foreignKey.constraintName
-              ].filter((_, idx) => idx !== _i)
-            }));
+            setDisplayColumnNames(
+              displayColumnNames.filter((_, idx) => idx !== _i)
+            );
           };
 
           // show remove icon for all column pairs except last

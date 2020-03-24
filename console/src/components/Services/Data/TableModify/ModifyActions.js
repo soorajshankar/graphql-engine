@@ -7,6 +7,7 @@ import {
   makeMigrationCall,
   LOAD_SCHEMA,
   setConsoleFKOptions,
+  removeConsoleFKOptions,
 } from '../DataActions';
 import _push from '../push';
 import { SET_SQL } from '../RawSQL/Actions';
@@ -714,6 +715,14 @@ const removeForeignKey = (index, tableSchema) => {
           ...getState().tables.modify.fkModify.slice(0, index),
           ...getState().tables.modify.fkModify.slice(index + 1),
         ])
+      );
+
+      dispatch(
+        removeConsoleFKOptions(
+          schemaName,
+          tableName,
+          oldConstraint.constraintName
+        )
       );
     };
     const customOnError = err => {

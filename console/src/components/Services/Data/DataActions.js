@@ -27,6 +27,7 @@ import {
   fetchTableListQuery,
   fetchTrackedTableListQuery,
   mergeLoadSchemaData,
+  removeDisplayConfig,
 } from './utils';
 
 import _push from './push';
@@ -805,7 +806,48 @@ const setConsoleFKOptions = displayConfig => (dispatch, getState) => {
     ),
   };
 
-  return dispatch(requestAction(url, options));
+  return dispatch(requestAction(url, options)).then(() =>
+    dispatch({
+      type: SET_HASURA_OPTS,
+      data: newConsoleState,
+    })
+  );
+};
+
+const removeConsoleFKOptions = (schemaName, tableName, fkConstraintName) => (
+  dispatch,
+  getState
+) => {
+  const url = Endpoints.getSchema;
+
+  // TODO: don't use telemetry
+  const { hasura_uuid } = getState().telemetry;
+  const { consoleOpts } = getState().tables;
+
+  const newConsoleState = removeDisplayConfig(
+    { schemaName, tableName, fkConstraintName },
+    consoleOpts
+  );
+
+  const options = {
+    credentials: globalCookiePolicy,
+    method: 'POST',
+    headers: dataHeaders(getState),
+    body: JSON.stringify(
+      getRunSqlQuery(
+        `update hdb_catalog.hdb_version set console_state = '${JSON.stringify(
+          newConsoleState
+        )}' where hasura_uuid='${hasura_uuid}';`
+      )
+    ),
+  };
+
+  return dispatch(requestAction(url, options)).then(() =>
+    dispatch({
+      type: SET_HASURA_OPTS,
+      data: newConsoleState,
+    })
+  );
 };
 
 export const fetchRoleList = () => (dispatch, getState) => {
@@ -1031,4 +1073,5 @@ export {
   loadConsoleOpts,
   SET_HASURA_OPTS,
   getForeignKeyOptions,
+  removeConsoleFKOptions,
 };

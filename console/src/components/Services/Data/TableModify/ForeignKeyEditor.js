@@ -26,7 +26,7 @@ const ForeignKeyEditor = ({
   const [displayColumnNames, setDisplayColumnNames] = useState({});
   useEffect(() => {
     setDisplayColumnNames(
-      getDisplayNamesPerKey(consoleOpts, tableSchema, fkModify)
+      getDisplayNamesPerKey(consoleOpts, tableSchema, fkModify) || {}
     );
   }, [consoleOpts]);
 
@@ -100,6 +100,14 @@ const ForeignKeyEditor = ({
       return <div>{collapsedLabelText}</div>;
     };
 
+    const constraintName = fk.constraintName || 'new-constraint';
+    const setFkDisplayNames = newColumnNames => {
+      setDisplayColumnNames(prev => ({
+        ...prev,
+        [constraintName]: newColumnNames,
+      }));
+    };
+
     // The content when the editor is expanded
     const expandedContent = () => (
       <ForeignKeySelector
@@ -112,8 +120,8 @@ const ForeignKeyEditor = ({
         orderedColumns={orderedColumns}
         dispatch={dispatch}
         setForeignKeys={setForeignKeys}
-        displayColumnNames={displayColumnNames[fk.constraintName] || []}
-        setDisplayColumnNames={setDisplayColumnNames}
+        displayColumnNames={displayColumnNames[constraintName] || []}
+        setDisplayColumnNames={setFkDisplayNames}
       />
     );
 
@@ -142,6 +150,12 @@ const ForeignKeyEditor = ({
       const newFks = [...fkModify];
       newFks[i] = existingForeignKeys[i];
       dispatch(setForeignKeys(newFks));
+      setFkDisplayNames(
+        displayColumnNames[constraintName].slice(
+          0,
+          newFks[i].colMappings.length - 1
+        )
+      );
     };
 
     const collapseButtonText = isLast ? 'Cancel' : 'Close';
@@ -152,7 +166,9 @@ const ForeignKeyEditor = ({
       removeFk = () => {
         const isOk = getConfirmation();
         if (isOk) {
-          dispatch(removeForeignKey(i, tableSchema, orderedColumns));
+          dispatch(
+            removeForeignKey(i, tableSchema, orderedColumns, displayColumnNames)
+          );
         }
       };
     }
