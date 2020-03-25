@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  ComponentProps,
+} from 'react';
 import throttle from 'lodash.throttle';
 
 import { JSONB, JSONDTYPE, TEXT, BOOLEAN, getPlaceholder } from '../../utils';
@@ -23,6 +29,9 @@ const searchableSelectStyles = {
   },
 };
 
+// TODO: value can be more that string
+type Option = { label: string; value: string };
+
 type Column = {
   column_name: string;
   data_type: string;
@@ -36,8 +45,6 @@ type FkColOption = {
   data: Array<Record<string, string>>;
 };
 
-type SelectOption = { value: string; label: string };
-
 type Props = {
   enumOptions: Record<string, string[]>;
   col: Column;
@@ -50,8 +57,8 @@ type Props = {
   hasDefault: boolean;
   fkOptions: Array<FkColOption>;
   getFkOptions: (opts: FkColOption, value: string) => Promise<void>;
-  onFkValueChange?: (v: SelectOption) => void;
-  selectedOption: SelectOption;
+  onFkValueChange?: ComponentProps<typeof SearchableSelect>['onChange'];
+  selectedOption: Option;
 };
 
 export const TypedInput: React.FC<Props> = ({
@@ -150,7 +157,7 @@ export const TypedInput: React.FC<Props> = ({
     );
   }
 
-  if (columnFkOpts.current) {
+  if (columnFkOpts.current && onFkValueChange) {
     const options = columnFkOpts.current.data.map(row => ({
       // labels are in format `display name (actual ref value)`
       label: `${row[columnFkOpts.current!.displayName]} (${
@@ -167,7 +174,6 @@ export const TypedInput: React.FC<Props> = ({
         value={selectedOption}
         bsClass={styles.insertBox}
         styleOverrides={searchableSelectStyles}
-        placeholder="column_type" // todo
         onInputChange={(v: string) => setSearchValue(v)}
         filterOption="fulltext"
       />
