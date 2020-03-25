@@ -328,13 +328,6 @@ const getForeignKeyOptions = () => {
   };
 };
 
-/**
- *   from: string;
-  to: string;
-  displayName: string;
-  data: Array<Record<string, string>>;
-  refTable
- */
 const filterFkOptions = (fkColOptions, searchValue) => {
   return (dispatch, getState) => {
     const {
@@ -350,7 +343,9 @@ const filterFkOptions = (fkColOptions, searchValue) => {
           schema: currentSchema,
         },
         columns: [fkColOptions.to, fkColOptions.displayName],
-        where: { [fkColOptions.displayName]: searchValue },
+        ...(searchValue !== ''
+          ? { where: { [fkColOptions.displayName]: { $ilike: searchValue } } }
+          : {}),
         limit: 20,
       },
     };
@@ -365,10 +360,16 @@ const filterFkOptions = (fkColOptions, searchValue) => {
 
     return dispatch(requestAction(url, options)).then(
       data => {
-        console.log({ data });
         if (data.length !== 0) {
           dispatch({
             type: UPDATE_COL_FK_MAPPINGS,
+            data: {
+              from: fkColOptions.from,
+              to: fkColOptions.to,
+              displayName: fkColOptions.displayName,
+              refTable: fkColOptions.refTable,
+              data,
+            },
           });
         }
       },
@@ -1095,8 +1096,24 @@ const dataReducer = (state = defaultState, action) => {
         fkOptions: action.data,
       };
     case UPDATE_COL_FK_MAPPINGS:
+      const { to, from, displayName, refTable, data } = action.data;
       return {
         ...state,
+        // todo: move to utils
+        fkOptions: state.fkOptions.map(opt => {
+          if (
+            opt.from === from &&
+            opt.to === to &&
+            opt.displayName === displayName &&
+            opt.refTable === refTable
+          ) {
+            return {
+              ...opt,
+              data,
+            };
+          }
+          return opt;
+        }),
       };
     default:
       return state;

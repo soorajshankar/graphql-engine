@@ -24,7 +24,7 @@ import styles from '../../../Common/TableCommon/Table.scss';
 class InsertItem extends Component {
   constructor() {
     super();
-    this.state = { insertedRows: 0 };
+    this.state = { insertedRows: 0, selectedFkOptions: {} };
   }
 
   componentDidMount() {
@@ -125,6 +125,17 @@ class InsertItem extends Component {
         this.props.dispatch(filterFkOptions(config, value));
       };
 
+      const handleFkOptionChange = ({ value, label }) => {
+        onChange(undefined, value.toString());
+        this.setState(prev => ({
+          ...prev,
+          selectedFkOptions: {
+            ...prev.selectedFkOptions,
+            [colName]: { value, label },
+          },
+        }));
+      };
+
       return (
         <div key={i} className={`form-group ${styles.displayFlexContainer}`}>
           <label
@@ -157,6 +168,8 @@ class InsertItem extends Component {
               index={i}
               fkOptions={fkOptions}
               getFkOptions={handleSearchValueChange}
+              selectedOption={this.state.selectedFkOptions[colName]}
+              onFkValueChange={handleFkOptionChange}
             />
           </span>
           <label className={styles.radioLabel + ' radio-inline'}>
@@ -243,6 +256,10 @@ class InsertItem extends Component {
                     } else if (refs[colName].defaultNode.checked) {
                       // default
                       return;
+                    } else if (this.state.selectedFkOptions[colName]) {
+                      inputValues[colName] = this.state.selectedFkOptions[
+                        colName
+                      ].value;
                     } else {
                       inputValues[colName] =
                         refs[colName].valueNode.props !== undefined

@@ -25,6 +25,12 @@ const getPrefixFilter = () => {
   return createFilter(prefixFilterOptions);
 };
 
+const getFulltextFilter = () => {
+  return createFilter({
+    matchFrom: 'any',
+  });
+};
+
 /*
  * Searchable select box component
  *  1) options: Accepts options
@@ -62,6 +68,9 @@ const SearchableSelectBox = ({
     case 'prefix':
       customFilter = getPrefixFilter();
       break;
+    case 'fulltext':
+      customFilter = getFulltextFilter();
+      break;
     default:
       customFilter = {};
   }
@@ -94,8 +103,6 @@ const SearchableSelectBox = ({
 };
 
 SearchableSelectBox.propTypes = {
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
   options: PropTypes.array.isRequired,
   bsClass: PropTypes.string,
   customStyle: PropTypes.object,

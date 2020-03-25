@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import throttle from 'lodash.throttle';
 
 import { JSONB, JSONDTYPE, TEXT, BOOLEAN, getPlaceholder } from '../../utils';
 import JsonInput from '../../../../Common/CustomInputTypes/JsonInput';
@@ -35,6 +36,8 @@ type FkColOption = {
   data: Array<Record<string, string>>;
 };
 
+type SelectOption = { value: string; label: string };
+
 type Props = {
   enumOptions: Record<string, string[]>;
   col: Column;
@@ -47,6 +50,8 @@ type Props = {
   hasDefault: boolean;
   fkOptions: Array<FkColOption>;
   getFkOptions: (opts: FkColOption, value: string) => Promise<void>;
+  onFkValueChange?: (v: SelectOption) => void;
+  selectedOption: SelectOption;
 };
 
 export const TypedInput: React.FC<Props> = ({
@@ -61,6 +66,8 @@ export const TypedInput: React.FC<Props> = ({
   hasDefault,
   fkOptions,
   getFkOptions,
+  onFkValueChange,
+  selectedOption,
 }) => {
   const [searchValue, setSearchValue] = useState('');
 
@@ -69,6 +76,26 @@ export const TypedInput: React.FC<Props> = ({
     data_type: colType,
     column_default: colDefault,
   } = col;
+
+  const columnFkOpts = useRef<FkColOption>();
+  columnFkOpts.current =
+    fkOptions && fkOptions.find(opts => opts.from === colName);
+
+  const getForeignKeyOptionsThrottled = useMemo(
+    () =>
+      throttle(
+        (value: string) =>
+          columnFkOpts.current && getFkOptions(columnFkOpts.current, value),
+        1000
+      ),
+    [getFkOptions]
+  );
+
+  useEffect(() => {
+    if (columnFkOpts) {
+      getForeignKeyOptionsThrottled(searchValue);
+    }
+  }, [searchValue]);
 
   const isAutoIncrement = isColumnAutoIncrement(col);
   const placeHolder = hasDefault ? colDefault : getPlaceholder(colType);
@@ -123,30 +150,26 @@ export const TypedInput: React.FC<Props> = ({
     );
   }
 
-  const columnFkOpts =
-    fkOptions && fkOptions.find(opts => opts.from === colName);
-  if (columnFkOpts) {
-    const onSearchValueChange = (value: string) => {
-      setSearchValue(value);
-      getFkOptions(columnFkOpts, value);
-    };
-
-    const options = columnFkOpts.data.map(row => ({
-      label: row[columnFkOpts.displayName],
-      value: row[columnFkOpts.to],
+  if (columnFkOpts.current) {
+    const options = columnFkOpts.current.data.map(row => ({
+      // labels are in format `display name (actual ref value)`
+      label: `${row[columnFkOpts.current!.displayName]} (${
+        row[columnFkOpts.current!.to]
+      })`,
+      value: row[columnFkOpts.current!.to],
     }));
-    delete standardInputProps.ref; // TODO
+    delete standardInputProps.ref;
     return (
       <SearchableSelect
         {...standardInputProps}
         options={options}
-        onChange={console.log}
-        value={searchValue}
+        onChange={onFkValueChange}
+        value={selectedOption}
         bsClass={styles.insertBox}
         styleOverrides={searchableSelectStyles}
-        placeholder="column_type"
-        onInputChange={onSearchValueChange}
-        filterOption="prefix"
+        placeholder="column_type" // todo
+        onInputChange={(v: string) => setSearchValue(v)}
+        filterOption="fulltext"
       />
     );
   }
