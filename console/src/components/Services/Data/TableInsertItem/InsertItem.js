@@ -340,7 +340,6 @@ const mapStateToProps = (state, ownProps) => {
     migrationMode: state.main.migrationMode,
     readOnlyMode: state.main.readOnlyMode,
     currentSchema: state.tables.currentSchema,
-    fkMappings: state.tables.fkMappings,
     fkOptions: state.tables.fkOptions,
   };
 };

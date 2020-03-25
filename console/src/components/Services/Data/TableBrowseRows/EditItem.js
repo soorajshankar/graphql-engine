@@ -13,15 +13,28 @@ import { findTable, generateTableDef } from '../../../Common/utils/pgUtils';
 import { getTableBrowseRoute } from '../../../Common/utils/routesUtils';
 import { TypedInput } from '../Common/Components/TypedInput';
 import { fetchEnumOptions } from './EditActions';
+import {
+  loadConsoleOpts,
+  getForeignKeyOptions,
+  filterFkOptions,
+} from '../DataActions';
 
 class EditItem extends Component {
   constructor() {
     super();
-    this.state = { insertedRows: 0, editorColumnMap: {}, currentColumn: null };
+    this.state = {
+      insertedRows: 0,
+      editorColumnMap: {},
+      currentColumn: null,
+      selectedFkOptions: {},
+    };
   }
 
   componentDidMount() {
     this.props.dispatch(fetchEnumOptions());
+    this.props
+      .dispatch(loadConsoleOpts())
+      .then(() => this.props.dispatch(getForeignKeyOptions()));
   }
 
   render() {
@@ -38,6 +51,7 @@ class EditItem extends Component {
       count,
       dispatch,
       enumOptions,
+      fkOptions,
     } = this.props;
 
     // check if item exists
@@ -80,23 +94,38 @@ class EditItem extends Component {
         defaultNode: null,
       };
 
+      const handleSearchValueChange = (config, value) => {
+        this.props.dispatch(filterFkOptions(config, value));
+      };
+
+      const handleFkOptionChange = ({ value, label }) => {
+        this.setState(prev => ({
+          ...prev,
+          selectedFkOptions: {
+            ...prev.selectedFkOptions,
+            [colName]: { value, label },
+          },
+        }));
+      };
+
       return (
-        <div key={i} className="form-group">
+        <div key={i} className={`form-group ${styles.displayFlexContainer}`}>
           <label
             className={'col-sm-3 control-label ' + styles.insertBoxLabel}
             title={colName}
           >
             {colName}
           </label>
-          <label className={styles.radioLabel + ' radio-inline'}>
-            <input
-              type="radio"
-              ref={node => {
-                refs[colName].valueNode = node;
-              }}
-              name={colName + '-value'}
-              value="option1"
-            />
+          <input
+            type="radio"
+            ref={node => {
+              refs[colName].valueNode = node;
+            }}
+            name={colName + '-value'}
+            value="option1"
+            style={{ marginTop: '10px' }}
+          />
+          <span style={{ padding: '0 12px', paddingLeft: '8px' }}>
             <TypedInput
               inputRef={node => {
                 refs[colName].valueInput = node;
@@ -106,8 +135,12 @@ class EditItem extends Component {
               col={col}
               index={i}
               hasDefault={hasDefault}
+              fkOptions={fkOptions}
+              getFkOptions={handleSearchValueChange}
+              selectedOption={this.state.selectedFkOptions[colName]}
+              onFkValueChange={handleFkOptionChange}
             />
-          </label>
+          </span>
           <label className={styles.radioLabel + ' radio-inline'}>
             <input
               type="radio"
@@ -172,6 +205,8 @@ class EditItem extends Component {
         } else if (refs[colName].defaultNode.checked) {
           // default
           inputValues[colName] = { default: true };
+        } else if (this.state.selectedFkOptions[colName]) {
+          inputValues[colName] = this.state.selectedFkOptions[colName].value;
         } else if (refs[colName].valueNode.checked) {
           inputValues[colName] =
             refs[colName].valueInput.props !== undefined
@@ -247,6 +282,7 @@ const mapStateToProps = (state, ownProps) => {
     migrationMode: state.main.migrationMode,
     readOnlyMode: state.main.readOnlyMode,
     currentSchema: state.tables.currentSchema,
+    fkOptions: state.tables.fkOptions,
   };
 };
 

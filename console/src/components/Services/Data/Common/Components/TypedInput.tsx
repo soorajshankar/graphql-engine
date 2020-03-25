@@ -29,6 +29,11 @@ const searchableSelectStyles = {
   },
 };
 
+const getSelectedFromPrev = (prevValue: string) => ({
+  value: prevValue,
+  label: prevValue,
+});
+
 // TODO: value can be more that string
 type Option = { label: string; value: string };
 
@@ -171,7 +176,7 @@ export const TypedInput: React.FC<Props> = ({
         {...standardInputProps}
         options={options}
         onChange={onFkValueChange}
-        value={selectedOption}
+        value={selectedOption || getSelectedFromPrev(prevValue)}
         bsClass={styles.insertBox}
         styleOverrides={searchableSelectStyles}
         onInputChange={(v: string) => setSearchValue(v)}
