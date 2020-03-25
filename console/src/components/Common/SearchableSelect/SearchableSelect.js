@@ -41,6 +41,7 @@ const SearchableSelectBox = ({
   styleOverrides,
   placeholder,
   filterOption,
+  onInputChange,
 }) => {
   /* Select element style customization */
 
@@ -87,6 +88,7 @@ const SearchableSelectBox = ({
       value={value}
       styles={customStyles}
       filterOption={customFilter}
+      onInputChange={onInputChange}
     />
   );
 };

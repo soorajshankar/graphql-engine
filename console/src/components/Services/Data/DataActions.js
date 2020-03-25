@@ -70,6 +70,7 @@ const REQUEST_ERROR = 'ModifyTable/REQUEST_ERROR';
 const SET_HASURA_OPTS = 'Data/SET_HASURA_OPTS';
 
 const SET_FK_MAPPINGS = 'Data/SET_FK_MAPPINGS';
+const UPDATE_COL_FK_MAPPINGS = 'Data/UPDATE_COL_FK_MAPPINGS';
 
 export const SET_ALL_ROLES = 'Data/SET_ALL_ROLES';
 export const setAllRoles = roles => ({
@@ -295,6 +296,7 @@ const getForeignKeyOptions = () => {
               schema: currentSchema,
             },
             columns: [m.displayColumnName, m.refColumnName],
+            limit: 20,
           },
         };
       }),
@@ -319,7 +321,61 @@ const getForeignKeyOptions = () => {
       },
       error => {
         console.error(
-          'Failed to load console options: ' + JSON.stringify(error)
+          'Failed to get foreign key options: ' + JSON.stringify(error)
+        );
+      }
+    );
+  };
+};
+
+/**
+ *   from: string;
+  to: string;
+  displayName: string;
+  data: Array<Record<string, string>>;
+  refTable
+ */
+const filterFkOptions = (fkColOptions, searchValue) => {
+  return (dispatch, getState) => {
+    const {
+      tables: { currentSchema },
+    } = getState();
+
+    const req = {
+      // TODO: move to utils
+      type: 'select',
+      args: {
+        table: {
+          name: fkColOptions.refTable,
+          schema: currentSchema,
+        },
+        columns: [fkColOptions.to, fkColOptions.displayName],
+        where: { [fkColOptions.displayName]: searchValue },
+        limit: 20,
+      },
+    };
+
+    const url = Endpoints.getSchema;
+    const options = {
+      credentials: globalCookiePolicy,
+      method: 'POST',
+      headers: dataHeaders(getState),
+      body: JSON.stringify(req),
+    };
+
+    return dispatch(requestAction(url, options)).then(
+      data => {
+        console.log({ data });
+        if (data.length !== 0) {
+          dispatch({
+            type: UPDATE_COL_FK_MAPPINGS,
+          });
+        }
+      },
+      error => {
+        console.error(
+          'Failed to get foreign key options for column: ' +
+            JSON.stringify(error)
         );
       }
     );
@@ -1038,6 +1094,10 @@ const dataReducer = (state = defaultState, action) => {
         ...state,
         fkOptions: action.data,
       };
+    case UPDATE_COL_FK_MAPPINGS:
+      return {
+        ...state,
+      };
     default:
       return state;
   }
@@ -1074,4 +1134,5 @@ export {
   SET_HASURA_OPTS,
   getForeignKeyOptions,
   removeConsoleFKOptions,
+  filterFkOptions,
 };

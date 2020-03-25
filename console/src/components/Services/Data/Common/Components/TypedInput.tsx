@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { JSONB, JSONDTYPE, TEXT, BOOLEAN, getPlaceholder } from '../../utils';
 import JsonInput from '../../../../Common/CustomInputTypes/JsonInput';
@@ -9,23 +9,30 @@ import SearchableSelect from '../../../../Common/SearchableSelect/SearchableSele
 
 const searchableSelectStyles = {
   container: {
-    width: '270px'
+    width: '270px',
   },
   control: {
-    minHeight: '34px'
+    minHeight: '34px',
   },
   dropdownIndicator: {
-    padding: '5px'
+    padding: '5px',
   },
   valueContainer: {
-    padding: '0px 12px'
-  }
+    padding: '0px 12px',
+  },
 };
 
 type Column = {
   column_name: string;
   data_type: string;
   column_default: string;
+};
+
+type FkColOption = {
+  from: string;
+  to: string;
+  displayName: string;
+  data: Array<Record<string, string>>;
 };
 
 type Props = {
@@ -38,12 +45,8 @@ type Props = {
   onFocus: () => void;
   prevValue: string;
   hasDefault: boolean;
-  fkOptions: Array<{
-    from: string;
-    to: string;
-    displayName: string;
-    data: Array<Record<string, string>>;
-  }>;
+  fkOptions: Array<FkColOption>;
+  getFkOptions: (opts: FkColOption, value: string) => Promise<void>;
 };
 
 export const TypedInput: React.FC<Props> = ({
@@ -56,12 +59,15 @@ export const TypedInput: React.FC<Props> = ({
   onFocus,
   prevValue,
   hasDefault,
-  fkOptions
+  fkOptions,
+  getFkOptions,
 }) => {
+  const [searchValue, setSearchValue] = useState('');
+
   const {
     column_name: colName,
     data_type: colType,
-    column_default: colDefault
+    column_default: colDefault,
   } = col;
 
   const isAutoIncrement = isColumnAutoIncrement(col);
@@ -95,7 +101,7 @@ export const TypedInput: React.FC<Props> = ({
     className: `form-control ${styles.insertBox}`,
     defaultValue: getDefaultValue(),
     type: 'text',
-    placeholder: 'text'
+    placeholder: 'text',
   };
 
   if (enumOptions && enumOptions[colName]) {
@@ -120,9 +126,14 @@ export const TypedInput: React.FC<Props> = ({
   const columnFkOpts =
     fkOptions && fkOptions.find(opts => opts.from === colName);
   if (columnFkOpts) {
+    const onSearchValueChange = (value: string) => {
+      setSearchValue(value);
+      getFkOptions(columnFkOpts, value);
+    };
+
     const options = columnFkOpts.data.map(row => ({
       label: row[columnFkOpts.displayName],
-      value: row[columnFkOpts.to]
+      value: row[columnFkOpts.to],
     }));
     delete standardInputProps.ref; // TODO
     return (
@@ -130,11 +141,12 @@ export const TypedInput: React.FC<Props> = ({
         {...standardInputProps}
         options={options}
         onChange={console.log}
-        value={'' /* to do */}
+        value={searchValue}
         bsClass={styles.insertBox}
         styleOverrides={searchableSelectStyles}
-        filterOption="prefix"
         placeholder="column_type"
+        onInputChange={onSearchValueChange}
+        filterOption="prefix"
       />
     );
   }
@@ -148,7 +160,7 @@ export const TypedInput: React.FC<Props> = ({
       <JsonInput
         standardProps={{
           ...standardInputProps,
-          defaultValue: JSON.stringify(prevValue)
+          defaultValue: JSON.stringify(prevValue),
         }}
         placeholderProp={getPlaceholder(colType)}
       />

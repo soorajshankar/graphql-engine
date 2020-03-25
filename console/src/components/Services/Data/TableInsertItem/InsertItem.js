@@ -10,6 +10,7 @@ import {
   setTable,
   loadConsoleOpts,
   getForeignKeyOptions,
+  filterFkOptions,
 } from '../DataActions';
 import { NotFoundError } from '../../../Error/PageNotFound';
 import {
@@ -61,7 +62,6 @@ class InsertItem extends Component {
       count,
       dispatch,
       enumOptions,
-      fkMappings,
       fkOptions,
     } = this.props;
 
@@ -121,14 +121,8 @@ class InsertItem extends Component {
         }
       };
 
-      const currentTableFkMappings = (fkMappings || []).find(
-        opts =>
-          opts.tableName === tableName && opts.schemaName === currentSchema
-      );
-
-      const handleSearchValueChange = e => {
-        // TODO: fetch results
-        console.log(e.target.value, currentTableFkMappings);
+      const handleSearchValueChange = (config, value) => {
+        this.props.dispatch(filterFkOptions(config, value));
       };
 
       return (
@@ -161,9 +155,8 @@ class InsertItem extends Component {
               onChange={onChange}
               onFocus={onFocus}
               index={i}
-              searchValue={this.state.searchValue}
-              onSearchValueChange={handleSearchValueChange}
               fkOptions={fkOptions}
+              getFkOptions={handleSearchValueChange}
             />
           </span>
           <label className={styles.radioLabel + ' radio-inline'}>

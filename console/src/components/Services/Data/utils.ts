@@ -786,6 +786,7 @@ export const createTableMappings = (
       from: mappings[i].columnName,
       to: mappings[i].refColumnName,
       displayName: mappings[i].displayColumnName,
+      refTable: mappings[i].refTableName,
       data: data[i],
     });
   }
