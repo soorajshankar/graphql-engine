@@ -172,10 +172,12 @@ export const TypedInput: React.FC<Props> = ({
     case JSONDTYPE:
       return (
         <JsonInput
-          {...standardInputProps}
-          defaultValue={
-            prevValue ? JSON.stringify(prevValue) : getDefaultValue()
-          }
+          standardProps={{
+            ...standardInputProps,
+            defaultValue: prevValue
+              ? JSON.stringify(prevValue)
+              : getDefaultValue(),
+          }}
           placeholderProp={placeHolder}
         />
       );
