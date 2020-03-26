@@ -1,7 +1,11 @@
 import sanitize from 'sanitize-filename';
 
 import { getSchemaBaseRoute } from '../../Common/utils/routesUtils';
-import { getRunSqlQuery } from '../../Common/utils/v1QueryUtils';
+import {
+  getRunSqlQuery,
+  getFilterByDisplayNameQuery,
+  getLoadConsoleOptsQuery,
+} from '../../Common/utils/v1QueryUtils';
 import Endpoints, { globalCookiePolicy } from '../../../Endpoints';
 import requestAction from '../../../utils/requestAction';
 import defaultState from './DataState';
@@ -237,16 +241,7 @@ const loadConsoleOpts = () => {
       credentials: globalCookiePolicy,
       method: 'POST',
       headers: dataHeaders(getState),
-      body: JSON.stringify({
-        type: 'select',
-        args: {
-          table: {
-            name: 'hdb_version',
-            schema: 'hdb_catalog',
-          },
-          columns: ['hasura_uuid', 'console_state'],
-        },
-      }),
+      body: JSON.stringify(getLoadConsoleOptsQuery()),
     };
 
     return dispatch(requestAction(url, options)).then(
@@ -274,32 +269,19 @@ const getForeignKeyOptions = () => {
     } = getState();
     if (!consoleOpts || !consoleOpts.fkDisplayNames) return;
 
-    // TODO: change name
-    // there can be many of them
-    const currentTableMappings = consoleOpts.fkDisplayNames
+    const allCurrentTableMappings = consoleOpts.fkDisplayNames
       .filter(
         m => m.tableName === currentTable && m.schemaName === currentSchema
       )
       .map(opts => opts.mappings)
       .reduce((acc, maps) => [...acc, ...maps], []);
-    if (!currentTableMappings || !currentTableMappings.length) return;
+    if (!allCurrentTableMappings || !allCurrentTableMappings.length) return;
 
     const req = {
-      // TODO: move to utils
       type: 'bulk',
-      args: currentTableMappings.map(m => {
-        return {
-          type: 'select',
-          args: {
-            table: {
-              name: m.refTableName,
-              schema: currentSchema,
-            },
-            columns: [m.displayColumnName, m.refColumnName],
-            limit: 20,
-          },
-        };
-      }),
+      args: allCurrentTableMappings.map(m =>
+        getForeignKeyOptions(m, currentSchema)
+      ),
     };
 
     const url = Endpoints.getSchema;
@@ -315,7 +297,7 @@ const getForeignKeyOptions = () => {
         if (data.length !== 0) {
           dispatch({
             type: SET_FK_MAPPINGS,
-            data: createTableMappings(data, currentTableMappings),
+            data: createTableMappings(data, allCurrentTableMappings),
           });
         }
       },
@@ -334,25 +316,11 @@ const filterFkOptions = (fkColOptions, searchValue) => {
       tables: { currentSchema },
     } = getState();
 
-    const req = {
-      // TODO: move to utils
-      type: 'select',
-      args: {
-        table: {
-          name: fkColOptions.refTable,
-          schema: currentSchema,
-        },
-        columns: [fkColOptions.to, fkColOptions.displayName],
-        ...(searchValue !== ''
-          ? {
-            where: {
-              [fkColOptions.displayName]: { $ilike: `%${searchValue}%` },
-            },
-          }
-          : {}),
-        limit: 20,
-      },
-    };
+    const req = getFilterByDisplayNameQuery(
+      searchValue,
+      currentSchema,
+      fkColOptions
+    );
 
     const url = Endpoints.getSchema;
     const options = {

@@ -12,6 +12,9 @@ import {
   SchemaPermission,
   ForeignKeyConstraint,
   ForeignKey,
+  DisplayConfig,
+  ConsoleOpts,
+  Mappings,
 } from './Types';
 import { equalTableDefs } from '../../Common/utils/pgUtils';
 
@@ -704,25 +707,6 @@ const postgresFunctionTester = /.*\(\)$/gm;
 export const isPostgresFunction = (str: string) =>
   new RegExp(postgresFunctionTester).test(str);
 
-type Mapping = {
-  columnName: string;
-  refTableName: string;
-  refColumnName: string;
-  displayColumnName: string;
-};
-
-type DisplayConfig = {
-  tableName: string;
-  schemaName: string;
-  constraintName: string;
-  mappings: Mapping[];
-};
-
-type ConsoleOpts = {
-  telemetryNotificationShown: boolean;
-  fkDisplayNames: DisplayConfig[];
-};
-
 const configsEqual = (config1: DisplayConfig, config2: DisplayConfig) => {
   return (
     config1.tableName === config2.tableName &&
@@ -778,7 +762,7 @@ export const removeDisplayConfig = (
 
 export const createTableMappings = (
   data: Array<Record<string, any>>,
-  mappings: Mapping[]
+  mappings: Mappings[]
 ) => {
   const result = [];
   for (let i = 0; i < data.length; ++i) {

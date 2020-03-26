@@ -93,3 +93,29 @@ export type ForeignKey = {
   onUpdate: string;
   onDelete: string;
 };
+
+export type FkOptions = {
+  from: string;
+  to: string;
+  displayName: string;
+  refTable: string;
+};
+
+export type Mappings = {
+  columnName: string;
+  refTableName: string;
+  refColumnName: string;
+  displayColumnName: string;
+};
+
+export type DisplayConfig = {
+  tableName: string;
+  schemaName: string;
+  constraintName: string;
+  mappings: Mappings[];
+};
+
+export type ConsoleOpts = {
+  telemetryNotificationShown: boolean;
+  fkDisplayNames: DisplayConfig[];
+};

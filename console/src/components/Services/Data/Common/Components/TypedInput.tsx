@@ -34,7 +34,6 @@ const createOpt = (prevValue: string) => ({
   label: prevValue,
 });
 
-// TODO: value can be more that string
 type Option = { label: string; value: string };
 
 type Column = {

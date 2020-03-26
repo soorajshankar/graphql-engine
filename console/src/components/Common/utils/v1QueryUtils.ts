@@ -1,5 +1,6 @@
 import { terminateSql } from './sqlUtils';
-import { TableInfo } from '../../Services/Data/Types';
+import { TableInfo, FkOptions } from '../../Services/Data/Types';
+import { Mapping } from '../../Services/Data/DataActions';
 
 export const getRunSqlQuery = (
   sql: string,
@@ -316,3 +317,49 @@ export const resetMetadataQuery = {
   type: 'clear_metadata',
   args: {},
 };
+
+export const getFilterByDisplayNameQuery = (
+  searchValue: string,
+  currentSchema: string,
+  fkOpts: FkOptions
+) => ({
+  type: 'select',
+  args: {
+    table: {
+      name: fkOpts.refTable,
+      schema: currentSchema,
+    },
+    columns: [fkOpts.to, fkOpts.displayName],
+    ...(searchValue !== ''
+      ? {
+        where: {
+          [fkOpts.displayName]: { $ilike: `%${searchValue}%` },
+        },
+      }
+      : {}),
+    limit: 20,
+  },
+});
+
+export const getLoadConsoleOptsQuery = () => ({
+  type: 'select',
+  args: {
+    table: {
+      name: 'hdb_version',
+      schema: 'hdb_catalog',
+    },
+    columns: ['hasura_uuid', 'console_state'],
+  },
+});
+
+export const getForeignKeyOptions = (m: Mapping, currentSchema: string) => ({
+  type: 'select',
+  args: {
+    table: {
+      name: m.refTableName,
+      schema: currentSchema,
+    },
+    columns: [m.displayColumnName, m.refColumnName],
+    limit: 20,
+  },
+});
