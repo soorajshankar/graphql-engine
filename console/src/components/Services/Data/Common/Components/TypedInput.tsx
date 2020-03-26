@@ -163,17 +163,22 @@ export const TypedInput: React.FC<Props> = ({
   }
 
   if (columnFkOpts.current && onFkValueChange) {
-    const options = columnFkOpts.current.data.map(row => ({
+    let options = columnFkOpts.current.data.map(row => ({
       // labels are in format `display name (actual ref value)`
       label: `${row[columnFkOpts.current!.displayName]} (${
         row[columnFkOpts.current!.to]
       })`,
       value: row[columnFkOpts.current!.to],
     }));
+    if (searchValue !== '') {
+      options = [{ label: searchValue, value: searchValue }, ...options];
+    }
     delete standardInputProps.ref;
     return (
       <SearchableSelect
         {...standardInputProps}
+        creatable
+        isClearable
         options={options}
         onChange={onFkValueChange}
         value={selectedOption || getSelectedFromPrev(prevValue)}

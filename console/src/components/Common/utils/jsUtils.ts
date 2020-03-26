@@ -2,28 +2,36 @@
 
 import { showErrorNotification } from '../../Services/Common/Notification';
 
-export const exists = value => {
+type Json =
+  | null
+  | boolean
+  | number
+  | string
+  | Json[]
+  | { [prop: string]: Json };
+
+export const exists = (value: unknown): boolean => {
   return value !== null && value !== undefined;
 };
 
-export const isArray = value => {
+export const isArray = (value: unknown): value is Array<any> => {
   return Array.isArray(value);
 };
 
-export const isObject = value => {
+export const isObject = (value: unknown): value is Record<PropertyKey, any> => {
   return typeof value === 'object' && value !== null;
 };
 
-export const isString = value => {
+export const isString = (value: unknown): value is string => {
   return typeof value === 'string';
 };
 
-export const isPromise = value => {
+export const isPromise = (value: unknown): value is Promise<any> => {
   if (!value) return false;
-  return value.constructor.name === 'Promise';
+  return (value as Promise<any>).constructor.name === 'Promise';
 };
 
-export const isEmpty = value => {
+export const isEmpty = (value: unknown): boolean => {
   let _isEmpty = false;
 
   if (!exists(value)) {
@@ -39,22 +47,27 @@ export const isEmpty = value => {
   return _isEmpty;
 };
 
-export const isEqual = (value1, value2) => {
+export const isEqual = (value1: Json, value2: Json): boolean => {
   let _isEqual = false;
 
   if (typeof value1 === typeof value2) {
     if (isArray(value1)) {
       _isEqual = JSON.stringify(value1) === JSON.stringify(value2);
     } else if (isObject(value2)) {
-      const value1Keys = Object.keys(value1);
-      const value2Keys = Object.keys(value2);
+      const value1Keys = Object.keys(value1 as Exclude<Json, null>);
+      const value2Keys = Object.keys(value2 as Exclude<Json, null>);
 
       if (value1Keys.length === value2Keys.length) {
         _isEqual = true;
 
         for (let i = 0; i < value1Keys.length; i++) {
           const key = value1Keys[i];
-          if (!isEqual(value1[key], value2[key])) {
+          if (
+            !isEqual(
+              (value1 as Record<PropertyKey, any>)[key],
+              (value2 as Record<PropertyKey, any>)[key]
+            )
+          ) {
             _isEqual = false;
             break;
           }
@@ -68,7 +81,7 @@ export const isEqual = (value1, value2) => {
   return _isEqual;
 };
 
-export function isJsonString(str) {
+export function isJsonString(str: string) {
   try {
     JSON.parse(str);
   } catch (e) {
@@ -78,14 +91,18 @@ export function isJsonString(str) {
   return true;
 }
 
-export function getAllJsonPaths(json, leafKeys = [], prefix = '') {
+export function getAllJsonPaths(
+  json: Json,
+  leafKeys: string[] = [],
+  prefix = ''
+) {
   const _paths = [];
 
-  const addPrefix = subPath => {
+  const addPrefix = (subPath: Json) => {
     return prefix + (prefix && subPath ? '.' : '') + subPath;
   };
 
-  const handleSubJson = (subJson, newPrefix) => {
+  const handleSubJson = (subJson: Json, newPrefix: string) => {
     const subPaths = getAllJsonPaths(subJson, leafKeys, newPrefix);
 
     subPaths.forEach(subPath => {
@@ -141,7 +158,7 @@ export const getConfirmation = (
 
     // retry prompt until user cancels or confirmation text matches
     // prompt returns null on cancel or a string otherwise
-    let promptResponse = '';
+    let promptResponse: string | null = '';
     while (!isConfirmed && promptResponse !== null) {
       promptResponse = prompt(modalContent);
 
@@ -153,17 +170,17 @@ export const getConfirmation = (
 };
 
 export const uploadFile = (
-  fileHandler,
+  fileHandler: any,
   fileFormat = null,
-  invalidFileHandler = null
-) => dispatch => {
+  invalidFileHandler: ((fileName: string) => void) | null = null
+) => (dispatch: any) => {
   const fileInputElement = document.createElement('div');
   fileInputElement.innerHTML = '<input style="display:none" type="file">';
-  const fileInput = fileInputElement.firstChild;
+  const fileInput = fileInputElement.firstChild as HTMLElement;
   document.body.appendChild(fileInputElement);
 
   const onFileUpload = () => {
-    const file = fileInput.files[0];
+    const file = (fileInput as HTMLInputElement)!.files![0];
     const fileName = file.name;
 
     let isValidFile = true;
@@ -203,13 +220,13 @@ export const uploadFile = (
   };
 
   // attach file upload handler
-  fileInput.addEventListener('change', onFileUpload);
+  fileInput!.addEventListener('change', onFileUpload);
 
   // trigger file upload window
-  fileInput.click();
+  fileInput!.click();
 };
 
-export const downloadFile = (fileName, dataString) => {
+export const downloadFile = (fileName: string, dataString: string) => {
   const downloadLinkElem = document.createElement('a');
   downloadLinkElem.setAttribute('href', dataString);
   downloadLinkElem.setAttribute('download', fileName);
@@ -221,7 +238,7 @@ export const downloadFile = (fileName, dataString) => {
   downloadLinkElem.remove();
 };
 
-export const downloadObjectAsJsonFile = (fileName, object) => {
+export const downloadObjectAsJsonFile = (fileName: string, object: object) => {
   const contentType = 'application/json;charset=utf-8;';
 
   const jsonSuffix = '.json';
@@ -238,8 +255,8 @@ export const downloadObjectAsJsonFile = (fileName, object) => {
   downloadFile(fileNameWithSuffix, dataString);
 };
 
-export const getFileExtensionFromFilename = filename => {
-  return filename.match(/\.[0-9a-z]+$/i)[0];
+export const getFileExtensionFromFilename = (filename: string) => {
+  return filename.match(/\.[0-9a-z]+$/i)![0];
 };
 
 // return time in format YYYY_MM_DD_hh_mm_ss_s
@@ -281,28 +298,29 @@ export const getCurrTimeForFileName = () => {
   return [year, month, day, hours, minutes, seconds, milliSeconds].join('_');
 };
 
-export const isValidTemplateLiteral = literal_ => {
+export const isValidTemplateLiteral = (literal_: string) => {
   const literal = literal_.trim();
   if (!literal) return false;
   const templateStartIndex = literal.indexOf('{{');
   const templateEndEdex = literal.indexOf('}}');
   return (
-    templateStartIndex !== '-1' && templateEndEdex > templateStartIndex + 2
+    ((templateStartIndex as unknown) as string) !== '-1' &&
+    templateEndEdex > templateStartIndex + 2
   );
 };
 
-export const getUrlSearchParamValue = param => {
+export const getUrlSearchParamValue = (param: string) => {
   const urlSearchParams = new URLSearchParams(window.location.search);
   return urlSearchParams.get(param);
 };
 
-export const getLastArrayElement = array => {
+export const getLastArrayElement = <T = any>(array: T[]) => {
   if (!array) return null;
   if (!array.length) return null;
   return array[array.length - 1];
 };
 
-export const getFirstArrayElement = array => {
+export const getFirstArrayElement = <T = any>(array: T[]) => {
   if (!array) return null;
   return array[0];
 };
