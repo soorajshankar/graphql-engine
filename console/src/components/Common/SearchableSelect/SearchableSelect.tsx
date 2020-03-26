@@ -6,7 +6,6 @@ import Select, {
   OptionTypeBase,
   ValueType,
 } from 'react-select';
-import Creatable from 'react-select/creatable';
 
 import { isArray, isObject } from '../utils/jsUtils';
 
@@ -43,7 +42,7 @@ type Props = {
   filterOption: 'prefix' | 'fulltext';
   onInputChange?: (v: string) => void;
   isClearable?: boolean;
-  creatable?: boolean;
+  onMenuClose?: () => void;
 };
 const SearchableSelectBox: React.FC<Props> = ({
   options,
@@ -54,7 +53,7 @@ const SearchableSelectBox: React.FC<Props> = ({
   placeholder,
   filterOption,
   onInputChange,
-  creatable,
+  onMenuClose,
 }) => {
   /* Select element style customization */
 
@@ -91,21 +90,21 @@ const SearchableSelectBox: React.FC<Props> = ({
     value = { value: value, label: value };
   }
 
-  return React.createElement(creatable ? Creatable : Select, {
-    formatCreateLabel: (v: string) => v,
-    isSearchable: true,
-    getNewOptionData: v => ({ label: v, value: v }),
-    createOptionPosition: 'first',
-    components: { Option: CustomOption },
-    classNamePrefix: bsClass,
-    placeholder: placeholder,
-    options: options as Option[],
-    onChange,
-    value,
-    styles: customStyles,
-    filterOption: customFilter,
-    onInputChange,
-  });
+  return (
+    <Select
+      isSearchable
+      components={{ Option: CustomOption }}
+      classNamePrefix={bsClass}
+      placeholder={placeholder}
+      options={options as Option[]}
+      onChange={onChange}
+      value={value}
+      styles={customStyles}
+      filterOption={customFilter}
+      onInputChange={onInputChange}
+      onMenuClose={onMenuClose}
+    />
+  );
 };
 
 export default SearchableSelectBox;

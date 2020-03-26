@@ -116,16 +116,19 @@ class EditItem extends Component {
           >
             {colName}
           </label>
-          <input
-            type="radio"
-            ref={node => {
-              refs[colName].valueNode = node;
-            }}
-            name={colName + '-value'}
-            value="option1"
-            style={{ marginTop: '10px' }}
-          />
-          <span style={{ padding: '0 12px', paddingLeft: '8px' }}>
+          <span
+            className={styles.radioLabel + ' radio-inline'}
+            style={{ paddingTop: 0 }} // TODO
+          >
+            <input
+              type="radio"
+              ref={node => {
+                refs[colName].valueNode = node;
+              }}
+              name={colName + '-value'}
+              value="option1"
+              style={{ marginTop: '10px' }}
+            />
             <TypedInput
               inputRef={node => {
                 refs[colName].valueInput = node;
@@ -206,6 +209,7 @@ class EditItem extends Component {
           // default
           inputValues[colName] = { default: true };
         } else if (this.state.selectedFkOptions[colName]) {
+          console.log({ state: this.state });
           inputValues[colName] = this.state.selectedFkOptions[colName].value;
         } else if (refs[colName].valueNode.checked) {
           inputValues[colName] =

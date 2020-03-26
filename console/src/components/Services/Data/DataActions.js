@@ -344,7 +344,11 @@ const filterFkOptions = (fkColOptions, searchValue) => {
         },
         columns: [fkColOptions.to, fkColOptions.displayName],
         ...(searchValue !== ''
-          ? { where: { [fkColOptions.displayName]: { $ilike: searchValue } } }
+          ? {
+            where: {
+              [fkColOptions.displayName]: { $ilike: `%${searchValue}%` },
+            },
+          }
           : {}),
         limit: 20,
       },

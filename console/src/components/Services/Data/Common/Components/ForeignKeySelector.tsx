@@ -320,6 +320,8 @@ const ForeignKeySelector: React.FC<Props> = ({
                       {'-- display_name --'}
                     </option>
                   )}
+                  {/* TODO: come up with better solution for remove */}
+                  {displayName && <option value="">-- remove --</option>}
                   {refTables[refTableName] &&
                     refTables[refTableName].map(rcOpt => {
                       return (

@@ -121,10 +121,6 @@ class InsertItem extends Component {
         }
       };
 
-      const handleSearchValueChange = (config, value) => {
-        this.props.dispatch(filterFkOptions(config, value));
-      };
-
       const handleFkOptionChange = ({ value, label }) => {
         onChange(undefined, value.toString());
         this.setState(prev => ({
@@ -136,6 +132,10 @@ class InsertItem extends Component {
         }));
       };
 
+      const handleSearchValueChange = (config, value) => {
+        this.props.dispatch(filterFkOptions(config, value));
+      };
+
       return (
         <div key={i} className={`form-group ${styles.displayFlexContainer}`}>
           <label
@@ -144,18 +144,21 @@ class InsertItem extends Component {
           >
             {colName}
           </label>
-          <input
-            disabled={isAutoIncrement}
-            type="radio"
-            ref={node => {
-              refs[colName].insertRadioNode = node;
-            }}
-            name={colName + '-value'}
-            value="option1"
-            defaultChecked={!hasDefault & !isNullable}
-            style={{ marginTop: '10px' }}
-          />
-          <span style={{ padding: '0 12px', paddingLeft: '8px' }}>
+          <span
+            className={styles.radioLabel + ' radio-inline'}
+            style={{ paddingTop: 0 }} // TODO
+          >
+            <input
+              disabled={isAutoIncrement}
+              type="radio"
+              ref={node => {
+                refs[colName].insertRadioNode = node;
+              }}
+              name={colName + '-value'}
+              value="option1"
+              defaultChecked={!hasDefault & !isNullable}
+              style={{ marginTop: '10px' }}
+            />
             <TypedInput
               inputRef={node => {
                 refs[colName].valueNode = node;

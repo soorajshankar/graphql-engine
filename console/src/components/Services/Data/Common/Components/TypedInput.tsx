@@ -29,7 +29,7 @@ const searchableSelectStyles = {
   },
 };
 
-const getSelectedFromPrev = (prevValue: string) => ({
+const createOpt = (prevValue: string) => ({
   value: prevValue,
   label: prevValue,
 });
@@ -164,28 +164,32 @@ export const TypedInput: React.FC<Props> = ({
 
   if (columnFkOpts.current && onFkValueChange) {
     let options = columnFkOpts.current.data.map(row => ({
-      // labels are in format `display name (actual ref value)`
       label: `${row[columnFkOpts.current!.displayName]} (${
         row[columnFkOpts.current!.to]
       })`,
       value: row[columnFkOpts.current!.to],
     }));
+    // Creating new option based on input
     if (searchValue !== '') {
-      options = [{ label: searchValue, value: searchValue }, ...options];
+      options = [createOpt(searchValue), ...options];
     }
     delete standardInputProps.ref;
     return (
       <SearchableSelect
         {...standardInputProps}
-        creatable
         isClearable
         options={options}
         onChange={onFkValueChange}
-        value={selectedOption || getSelectedFromPrev(prevValue)}
+        value={selectedOption || createOpt(prevValue)}
         bsClass={styles.insertBox}
         styleOverrides={searchableSelectStyles}
         onInputChange={(v: string) => setSearchValue(v)}
         filterOption="fulltext"
+        // Treating last search value the same was as selected option,
+        // so that user don't have to click in the dropdown, they can just leave the input
+        onMenuClose={() => {
+          if (searchValue !== '') onFkValueChange(createOpt(searchValue));
+        }}
       />
     );
   }
