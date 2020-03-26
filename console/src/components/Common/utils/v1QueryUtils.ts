@@ -11,8 +11,8 @@ export const getRunSqlQuery = (
     args: {
       sql: terminateSql(sql),
       cascade: !!shouldCascade,
-      read_only: !!readOnly
-    }
+      read_only: !!readOnly,
+    },
   };
 };
 
@@ -27,8 +27,8 @@ export const getCreatePermissionQuery = (
     args: {
       table: tableDef,
       role: role,
-      permission: permission
-    }
+      permission: permission,
+    },
   };
 };
 
@@ -41,15 +41,15 @@ export const getDropPermissionQuery = (
     type: 'drop_' + action + '_permission',
     args: {
       table: tableDef,
-      role: role
-    }
+      role: role,
+    },
   };
 };
 
 export const generateSetCustomTypesQuery = (customTypes: object[]) => {
   return {
     type: 'set_custom_types',
-    args: customTypes
+    args: customTypes,
   };
 };
 
@@ -63,8 +63,8 @@ export const generateCreateActionQuery = (
     args: {
       name,
       definition,
-      comment
-    }
+      comment,
+    },
   };
 };
 
@@ -72,8 +72,8 @@ export const generateDropActionQuery = (name: string) => {
   return {
     type: 'drop_action',
     args: {
-      name
-    }
+      name,
+    },
   };
 };
 
@@ -83,11 +83,11 @@ export const getFetchActionsQuery = () => {
     args: {
       table: {
         name: 'hdb_action',
-        schema: 'hdb_catalog'
+        schema: 'hdb_catalog',
       },
       columns: ['*.*'],
-      order_by: [{ column: 'action_name', type: 'asc' }]
-    }
+      order_by: [{ column: 'action_name', type: 'asc' }],
+    },
   };
 };
 
@@ -97,10 +97,10 @@ export const getFetchCustomTypesQuery = () => {
     args: {
       table: {
         name: 'hdb_custom_types',
-        schema: 'hdb_catalog'
+        schema: 'hdb_catalog',
       },
-      columns: ['*.*']
-    }
+      columns: ['*.*'],
+    },
   };
 };
 
@@ -115,8 +115,8 @@ export const getSetCustomRootFieldsQuery = (
     args: {
       table: tableDef,
       custom_root_fields: rootFields,
-      custom_column_names: customColumnNames
-    }
+      custom_column_names: customColumnNames,
+    },
   };
 };
 
@@ -125,11 +125,11 @@ export const getFetchAllRolesQuery = () => ({
   args: {
     table: {
       schema: 'hdb_catalog',
-      name: 'hdb_role'
+      name: 'hdb_role',
     },
     columns: ['role_name'],
-    order_by: { column: 'role_name', type: 'asc' }
-  }
+    order_by: { column: 'role_name', type: 'asc' },
+  },
 });
 
 // todo
@@ -144,10 +144,10 @@ export const getCreateActionPermissionQuery = (
       role: def.role,
       definition: {
         select: {
-          filter: def.filter
-        }
-      }
-    }
+          filter: def.filter,
+        },
+      },
+    },
   };
 };
 
@@ -161,8 +161,8 @@ export const getUpdateActionQuery = (
     args: {
       name: actionName,
       definition: def,
-      comment: actionComment
-    }
+      comment: actionComment,
+    },
   };
 };
 
@@ -174,8 +174,8 @@ export const getDropActionPermissionQuery = (
     type: 'drop_action_permission',
     args: {
       action: actionName,
-      role
-    }
+      role,
+    },
   };
 };
 
@@ -184,15 +184,15 @@ export const getSetTableEnumQuery = (tableDef: TableInfo, isEnum: boolean) => {
     type: 'set_table_is_enum',
     args: {
       table: tableDef,
-      is_enum: isEnum
-    }
+      is_enum: isEnum,
+    },
   };
 };
 
 export const getTrackTableQuery = (tableDef: TableInfo) => {
   return {
     type: 'add_existing_table_or_view',
-    args: tableDef
+    args: tableDef,
   };
 };
 
@@ -200,8 +200,8 @@ export const getUntrackTableQuery = (tableDef: TableInfo) => {
   return {
     type: 'untrack_table',
     args: {
-      table: tableDef
-    }
+      table: tableDef,
+    },
   };
 };
 
@@ -217,10 +217,10 @@ export const getAddComputedFieldQuery = (
       table: tableDef,
       name: computedFieldName,
       definition: {
-        ...definition
+        ...definition,
       },
-      comment: comment
-    }
+      comment: comment,
+    },
   };
 };
 
@@ -232,8 +232,8 @@ export const getDropComputedFieldQuery = (
     type: 'drop_computed_field',
     args: {
       table: tableDef,
-      name: computedFieldName
-    }
+      name: computedFieldName,
+    },
   };
 };
 
@@ -247,10 +247,10 @@ export const getDeleteQuery = (
     args: {
       table: {
         name: tableName,
-        schema: schemaName
+        schema: schemaName,
       },
-      where: pkClause
-    }
+      where: pkClause,
+    },
   };
 };
 
@@ -269,9 +269,50 @@ export const getEnumOptionsQuery = (
     args: {
       table: {
         name: request.enumTableName,
-        schema: currentSchema
+        schema: currentSchema,
       },
-      columns: [request.enumColumnName]
-    }
+      columns: [request.enumColumnName],
+    },
   };
+};
+
+export const inconsistentObjectsQuery = {
+  type: 'get_inconsistent_metadata',
+  args: {},
+};
+
+export const dropInconsistentObjectsQuery = {
+  type: 'drop_inconsistent_metadata',
+  args: {},
+};
+
+export const getReloadMetadataQuery = (shouldReloadRemoteSchemas: boolean) => ({
+  type: 'reload_metadata',
+  args: {
+    reload_remote_schemas: shouldReloadRemoteSchemas,
+  },
+});
+
+export const getReloadRemoteSchemaCacheQuery = (remoteSchemaName: string) => {
+  return {
+    type: 'reload_remote_schema',
+    args: {
+      name: remoteSchemaName,
+    },
+  };
+};
+
+export const exportMetadataQuery = {
+  type: 'export_metadata',
+  args: {},
+};
+
+export const generateReplaceMetadataQuery = (metadataJson: any) => ({
+  type: 'replace_metadata',
+  args: metadataJson,
+});
+
+export const resetMetadataQuery = {
+  type: 'clear_metadata',
+  args: {},
 };
