@@ -189,7 +189,8 @@ const ForeignKeySelector: React.FC<Props> = ({
           const rc = colMap.refColumn;
 
           // rel table column display name
-          const displayName = displayColumnNames[_i] || '';
+          const displayName =
+            (displayColumnNames && displayColumnNames[_i]) || '';
 
           // dispatch action for setting column config
           const dispatchSetCols = (key: string, value: string) => {
@@ -313,7 +314,6 @@ const ForeignKeySelector: React.FC<Props> = ({
                   onChange={onDisplayColumnNameChange}
                   disabled={!refTableName || !lc || !rc}
                   title="Select display column"
-                  data-test={`foreign-key-${index}-rcol-${_i}`}
                 >
                   {!displayName && (
                     <option value="" disabled>
