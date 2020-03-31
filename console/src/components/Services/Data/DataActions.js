@@ -1058,6 +1058,8 @@ const dataReducer = (state = defaultState, action) => {
     case SET_HASURA_OPTS:
       return {
         ...state,
+        // Console options for display names might have changed. Thus resetting fkOptions state
+        fkOptions: [],
         consoleOpts: action.data,
       };
     case SET_ALL_ROLES:
@@ -1074,7 +1076,6 @@ const dataReducer = (state = defaultState, action) => {
       const { to, from, displayName, refTable, data } = action.data;
       return {
         ...state,
-        // todo: move to utils
         fkOptions: state.fkOptions.map(opt => {
           if (
             opt.from === from &&
