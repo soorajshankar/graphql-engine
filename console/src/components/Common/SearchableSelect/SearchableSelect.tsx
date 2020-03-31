@@ -35,7 +35,7 @@ const CustomOption: React.FC<OptionProps<OptionTypeBase>> = props => {
 type Props = {
   options: OptionTypeBase | ReactText[];
   onChange: (value: ValueType<OptionTypeBase>) => void;
-  value: Option | any;
+  value?: Option | string;
   bsClass: string;
   styleOverrides: Record<PropertyKey, any>;
   placeholder: string;
@@ -98,7 +98,7 @@ const SearchableSelectBox: React.FC<Props> = ({
       placeholder={placeholder}
       options={options as Option[]}
       onChange={onChange}
-      value={value}
+      value={value as Option}
       styles={customStyles}
       filterOption={customFilter}
       onInputChange={onInputChange}

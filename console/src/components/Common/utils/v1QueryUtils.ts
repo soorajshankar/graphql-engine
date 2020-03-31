@@ -133,11 +133,11 @@ export const getFetchAllRolesQuery = () => ({
   },
 });
 
-// todo
 export const getCreateActionPermissionQuery = (
-  def: any,
+  def: { role: string; filter: any },
   actionName: string
 ) => {
+  console.log({ def });
   return {
     type: 'create_action_permission',
     args: {
@@ -352,7 +352,10 @@ export const getLoadConsoleOptsQuery = () => ({
   },
 });
 
-export const getForeignKeyOptions = (m: Mapping, currentSchema: string) => ({
+export const getForeignKeyOptionsQuery = (
+  m: Mapping,
+  currentSchema: string
+) => ({
   type: 'select',
   args: {
     table: {

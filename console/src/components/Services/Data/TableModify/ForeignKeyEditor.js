@@ -72,7 +72,10 @@ const ForeignKeyEditor = ({
     const refTables = {};
     allSchemas.forEach(ts => {
       if (ts.table_schema === fk.refSchemaName) {
-        refTables[ts.table_name] = ts.columns.map(c => c.column_name);
+        refTables[ts.table_name] = ts.columns.map(c => ({
+          name: c.column_name,
+          type: c.data_type,
+        }));
       }
     });
 

@@ -1,11 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  ComponentProps,
-} from 'react';
-import throttle from 'lodash.throttle';
+import React, { ComponentProps } from 'react';
 
 import { JSONB, JSONDTYPE, TEXT, BOOLEAN, getPlaceholder } from '../../utils';
 import JsonInput from '../../../../Common/CustomInputTypes/JsonInput';
@@ -13,26 +6,7 @@ import TextInput from '../../../../Common/CustomInputTypes/TextInput';
 import styles from '../../../../Common/TableCommon/Table.scss';
 import { isColumnAutoIncrement } from '../../../../Common/utils/pgUtils';
 import SearchableSelect from '../../../../Common/SearchableSelect/SearchableSelect';
-
-const searchableSelectStyles = {
-  container: {
-    width: '270px',
-  },
-  control: {
-    minHeight: '34px',
-  },
-  dropdownIndicator: {
-    padding: '5px',
-  },
-  valueContainer: {
-    padding: '0px 12px',
-  },
-};
-
-const createOpt = (prevValue: string) => ({
-  value: prevValue,
-  label: prevValue,
-});
+import { ForeignKeyValueSelect } from './ForeignKeyValueSelect';
 
 type Option = { label: string; value: string };
 
@@ -80,33 +54,11 @@ export const TypedInput: React.FC<Props> = ({
   onFkValueChange,
   selectedOption,
 }) => {
-  const [searchValue, setSearchValue] = useState('');
-
   const {
     column_name: colName,
     data_type: colType,
     column_default: colDefault,
   } = col;
-
-  const columnFkOpts = useRef<FkColOption>();
-  columnFkOpts.current =
-    fkOptions && fkOptions.find(opts => opts.from === colName);
-
-  const getForeignKeyOptionsThrottled = useMemo(
-    () =>
-      throttle(
-        (value: string) =>
-          columnFkOpts.current && getFkOptions(columnFkOpts.current, value),
-        1000
-      ),
-    [getFkOptions]
-  );
-
-  useEffect(() => {
-    if (columnFkOpts) {
-      getForeignKeyOptionsThrottled(searchValue);
-    }
-  }, [searchValue]);
 
   const isAutoIncrement = isColumnAutoIncrement(col);
   const placeHolder = hasDefault ? colDefault : getPlaceholder(colType);
@@ -161,34 +113,22 @@ export const TypedInput: React.FC<Props> = ({
     );
   }
 
-  if (columnFkOpts.current && onFkValueChange) {
-    let options = columnFkOpts.current.data.map(row => ({
-      label: `${row[columnFkOpts.current!.displayName]} (${
-        row[columnFkOpts.current!.to]
-      })`,
-      value: row[columnFkOpts.current!.to],
-    }));
-    // Creating new option based on input
-    if (searchValue !== '') {
-      options = [createOpt(searchValue), ...options];
-    }
+  if (
+    onFkValueChange &&
+    fkOptions &&
+    fkOptions.some(opts => opts.from === colName)
+  ) {
     delete standardInputProps.ref;
     return (
-      <SearchableSelect
-        {...standardInputProps}
-        isClearable
-        options={options}
-        onChange={onFkValueChange}
-        value={selectedOption || createOpt(prevValue)}
-        bsClass={styles.insertBox}
-        styleOverrides={searchableSelectStyles}
-        onInputChange={(v: string) => setSearchValue(v)}
-        filterOption="fulltext"
-        // Treating last search value the same was as selected option,
-        // so that user don't have to click in the dropdown, they can just leave the input
-        onMenuClose={() => {
-          if (searchValue !== '') onFkValueChange(createOpt(searchValue));
-        }}
+      <ForeignKeyValueSelect
+        prevValue={prevValue}
+        fkOptions={fkOptions}
+        getFkOptions={getFkOptions}
+        selectedOption={selectedOption}
+        standardInputProps={standardInputProps}
+        columnName={colName}
+        placeholder={placeHolder}
+        onFkValueChange={onFkValueChange}
       />
     );
   }

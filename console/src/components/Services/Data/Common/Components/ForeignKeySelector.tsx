@@ -24,7 +24,7 @@ type Props = {
   setForeignKeys(keys: ForeignKey[]): void;
   service: string;
   schemaList: string[];
-  refTables: Record<string, string[]>;
+  refTables: Record<string, { type: string; name: string }[]>;
   displayColumnNames: string[];
   setDisplayColumnNames(newNames: string[]): void;
 };
@@ -300,14 +300,15 @@ const ForeignKeySelector: React.FC<Props> = ({
                   {refTables[refTableName] &&
                     refTables[refTableName].map(rcOpt => {
                       return (
-                        <option key={rcOpt} value={rcOpt}>
-                          {rcOpt}
+                        <option key={rcOpt.name} value={rcOpt.name}>
+                          {rcOpt.name}
                         </option>
                       );
                     })}
                 </select>
               </Col>
               <Col sm={4}>
+                {/*  add tooltip that it only works for "varchar"/"text"/"citext */}
                 <select
                   className={`form-control ${styles.select} ${styles.wd100Percent}`}
                   value={displayName}
@@ -323,13 +324,17 @@ const ForeignKeySelector: React.FC<Props> = ({
                   {/* TODO: come up with better solution for remove */}
                   {displayName && <option value="">-- remove --</option>}
                   {refTables[refTableName] &&
-                    refTables[refTableName].map(rcOpt => {
-                      return (
-                        <option key={rcOpt} value={rcOpt}>
-                          {rcOpt}
-                        </option>
-                      );
-                    })}
+                    refTables[refTableName]
+                      .filter(dnOpt =>
+                        ['text', 'citext', 'varchar'].includes(dnOpt.type)
+                      )
+                      .map(dnOpt => {
+                        return (
+                          <option key={dnOpt.name} value={dnOpt.name}>
+                            {dnOpt.name}
+                          </option>
+                        );
+                      })}
                 </select>
               </Col>
               <div className={styles.width_40}>{removeIcon}</div>

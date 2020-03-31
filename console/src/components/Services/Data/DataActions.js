@@ -35,7 +35,10 @@ import {
 } from './utils';
 
 import _push from './push';
-import { getFetchAllRolesQuery } from '../../Common/utils/v1QueryUtils';
+import {
+  getFetchAllRolesQuery,
+  getForeignKeyOptionsQuery,
+} from '../../Common/utils/v1QueryUtils';
 
 import {
   fetchColumnTypesQuery,
@@ -280,7 +283,7 @@ const getForeignKeyOptions = () => {
     const req = {
       type: 'bulk',
       args: allCurrentTableMappings.map(m =>
-        getForeignKeyOptions(m, currentSchema)
+        getForeignKeyOptionsQuery(m, currentSchema)
       ),
     };
 
