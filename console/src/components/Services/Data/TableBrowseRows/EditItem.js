@@ -117,8 +117,7 @@ class EditItem extends Component {
             {colName}
           </label>
           <span
-            className={styles.radioLabel + ' radio-inline'}
-            style={{ paddingTop: 0 }} // TODO
+            className={`${styles.radioLabel} ${styles.typedInputWrapper} radio-inline`}
           >
             <input
               type="radio"
@@ -127,7 +126,6 @@ class EditItem extends Component {
               }}
               name={colName + '-value'}
               value="option1"
-              style={{ marginTop: '10px' }}
             />
             <TypedInput
               inputRef={node => {

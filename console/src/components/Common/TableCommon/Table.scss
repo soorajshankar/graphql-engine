@@ -201,3 +201,11 @@ a.expanded {
   height: 16px;
   margin-bottom: 2px;
 }
+
+.typedInputWrapper {
+  padding-top: 0 !important;
+
+  input[type='radio'] {
+    margin-top: 10px;
+  }
+}

@@ -46,7 +46,7 @@ type Props = {
   onFkValueChange: ComponentProps<typeof SearchableSelect>['onChange'];
   selectedOption: Option;
   standardInputProps: ComponentProps<'select'>;
-  placeholder: string; // TODO
+  placeholder: string;
   columnName: string;
 };
 

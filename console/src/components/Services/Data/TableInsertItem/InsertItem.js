@@ -145,8 +145,7 @@ class InsertItem extends Component {
             {colName}
           </label>
           <span
-            className={styles.radioLabel + ' radio-inline'}
-            style={{ paddingTop: 0 }} // TODO
+            className={`${styles.radioLabel} ${styles.typedInputWrapper} radio-inline`}
           >
             <input
               disabled={isAutoIncrement}
@@ -157,7 +156,6 @@ class InsertItem extends Component {
               name={colName + '-value'}
               value="option1"
               defaultChecked={!hasDefault & !isNullable}
-              style={{ marginTop: '10px' }}
             />
             <TypedInput
               inputRef={node => {
