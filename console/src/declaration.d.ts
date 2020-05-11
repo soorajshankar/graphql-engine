@@ -8,3 +8,5 @@ declare namespace SvgPanZoom {
 }
 
 declare module 'react-bootstrap/lib/Tooltip';
+declare module 'react-bootstrap/lib/Col';
+declare module 'react-bootstrap/lib/Row';
