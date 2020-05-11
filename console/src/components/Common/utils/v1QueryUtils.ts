@@ -27,8 +27,8 @@ export const getCreatePermissionQuery = (
     type: 'create_' + action + '_permission',
     args: {
       table: tableDef,
-      role: role,
-      permission: permission,
+      role,
+      permission,
     },
   };
 };
@@ -42,7 +42,7 @@ export const getDropPermissionQuery = (
     type: 'drop_' + action + '_permission',
     args: {
       table: tableDef,
-      role: role,
+      role,
     },
   };
 };
@@ -220,7 +220,7 @@ export const getAddComputedFieldQuery = (
       definition: {
         ...definition,
       },
-      comment: comment,
+      comment,
     },
   };
 };
@@ -332,10 +332,10 @@ export const getFilterByDisplayNameQuery = (
     columns: [fkOpts.to, fkOpts.displayName],
     ...(searchValue !== ''
       ? {
-        where: {
-          [fkOpts.displayName]: { $ilike: `%${searchValue}%` },
-        },
-      }
+          where: {
+            [fkOpts.displayName]: { $ilike: `%${searchValue}%` },
+          },
+        }
       : {}),
     limit: 20,
   },
@@ -364,5 +364,52 @@ export const getForeignKeyOptionsQuery = (
     },
     columns: [m.displayColumnName, m.refColumnName],
     limit: 20,
+  },
+});
+
+export const generateSelectQuery = (
+  type: string,
+  tableDef: { tableName: string; schemaName: string },
+  {
+    where,
+    limit,
+    offset,
+    order_by,
+    columns,
+  }: {
+    where: object;
+    limit?: number;
+    offset?: number;
+    order_by?: 'asc' | 'desc';
+    columns: string[];
+  }
+) => ({
+  type,
+  args: {
+    columns,
+    where,
+    limit,
+    offset,
+    order_by,
+    table: tableDef,
+  },
+});
+
+export const getFetchManualTriggersQuery = (tableName: string) => ({
+  type: 'select',
+  args: {
+    table: {
+      name: 'event_triggers',
+      schema: 'hdb_catalog',
+    },
+    columns: ['*'],
+    order_by: {
+      column: 'name',
+      type: 'asc',
+      nulls: 'last',
+    },
+    where: {
+      table_name: tableName,
+    },
   },
 });

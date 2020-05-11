@@ -10,7 +10,13 @@ type Json =
   | Json[]
   | { [prop: string]: Json };
 
-export const exists = (value: unknown): boolean => {
+/* TYPE utils */
+
+export const isNotDefined = (value: unknown) => {
+  return value === null || value === undefined;
+};
+
+export const exists = (value: unknown) => {
   return value !== null && value !== undefined;
 };
 
@@ -26,39 +32,61 @@ export const isString = (value: unknown): value is string => {
   return typeof value === 'string';
 };
 
+export const isNumber = (value: unknown): value is number => {
+  return typeof value === 'number';
+};
+
 export const isPromise = (value: unknown): value is Promise<any> => {
   if (!value) return false;
   return (value as Promise<any>).constructor.name === 'Promise';
 };
 
-export const isEmpty = (value: unknown): boolean => {
-  let _isEmpty = false;
+export const isValidTemplateLiteral = (literal_: string) => {
+  const literal = literal_.trim();
+  if (!literal) return false;
+  const templateStartIndex = literal.indexOf('{{');
+  const templateEndEdex = literal.indexOf('}}');
+  return templateStartIndex !== -1 && templateEndEdex > templateStartIndex + 2;
+};
 
-  if (!exists(value)) {
-    _isEmpty = true;
-  } else if (isArray(value)) {
-    _isEmpty = value.length === 0;
-  } else if (isObject(value)) {
-    _isEmpty = JSON.stringify(value) === JSON.stringify({});
-  } else if (isString(value)) {
-    _isEmpty = value === '';
+export const isJsonString = (str: string) => {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
   }
 
-  return _isEmpty;
+  return true;
+};
+
+export const isEmpty = (value: unknown) => {
+  let empty = false;
+
+  if (!exists(value)) {
+    empty = true;
+  } else if (isArray(value)) {
+    empty = value.length === 0;
+  } else if (isObject(value)) {
+    empty = JSON.stringify(value) === JSON.stringify({});
+  } else if (isString(value)) {
+    empty = value === '';
+  }
+
+  return empty;
 };
 
 export const isEqual = (value1: Json, value2: Json): boolean => {
-  let _isEqual = false;
+  let equal = false;
 
   if (typeof value1 === typeof value2) {
     if (isArray(value1)) {
-      _isEqual = JSON.stringify(value1) === JSON.stringify(value2);
+      equal = JSON.stringify(value1) === JSON.stringify(value2);
     } else if (isObject(value2)) {
       const value1Keys = Object.keys(value1 as Exclude<Json, null>);
       const value2Keys = Object.keys(value2 as Exclude<Json, null>);
 
       if (value1Keys.length === value2Keys.length) {
-        _isEqual = true;
+        equal = true;
 
         for (let i = 0; i < value1Keys.length; i++) {
           const key = value1Keys[i];
@@ -68,35 +96,51 @@ export const isEqual = (value1: Json, value2: Json): boolean => {
               (value2 as Record<PropertyKey, any>)[key]
             )
           ) {
-            _isEqual = false;
+            equal = false;
             break;
           }
         }
       }
     } else {
-      _isEqual = value1 === value2;
+      equal = value1 === value2;
     }
   }
 
-  return _isEqual;
+  return equal;
 };
 
-export function isJsonString(str: string) {
-  try {
-    JSON.parse(str);
-  } catch (e) {
-    return false;
-  }
+/* ARRAY utils */
 
-  return true;
-}
+export const getLastArrayElement = <T = any>(array: T[]) => {
+  if (!array) return null;
+  if (!array.length) return null;
+  return array[array.length - 1];
+};
 
-export function getAllJsonPaths(
+export const getFirstArrayElement = <T = any>(array: T[]) => {
+  if (!array) return null;
+  return array[0];
+};
+
+export const deleteArrayElementAtIndex = <T = any>(
+  array: T[],
+  index: number
+) => {
+  return array.splice(index, 1);
+};
+
+export const arrayDiff = <T = any>(arr1: T[], arr2: T[]) => {
+  return arr1.filter(v => !arr2.includes(v));
+};
+
+/* JSON utils */
+
+export const getAllJsonPaths = (
   json: Json,
   leafKeys: string[] = [],
   prefix = ''
-) {
-  const _paths = [];
+) => {
+  const paths = [];
 
   const addPrefix = (subPath: Json) => {
     return prefix + (prefix && subPath ? '.' : '') + subPath;
@@ -106,11 +150,11 @@ export function getAllJsonPaths(
     const subPaths = getAllJsonPaths(subJson, leafKeys, newPrefix);
 
     subPaths.forEach(subPath => {
-      _paths.push(subPath);
+      paths.push(subPath);
     });
 
     if (!subPaths.length) {
-      _paths.push(newPrefix);
+      paths.push(newPrefix);
     }
   };
 
@@ -121,17 +165,39 @@ export function getAllJsonPaths(
   } else if (isObject(json)) {
     Object.keys(json).forEach(key => {
       if (leafKeys.includes(key)) {
-        _paths.push({ [addPrefix(key)]: json[key] });
+        paths.push({ [addPrefix(key)]: json[key] });
       } else {
         handleSubJson(json[key], addPrefix(key));
       }
     });
   } else {
-    _paths.push(addPrefix(json));
+    paths.push(addPrefix(json));
   }
 
-  return _paths;
-}
+  return paths;
+};
+
+/* TRANSFORM utils */
+
+export const capitalize = (s: string) => {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+// return number with commas for readability
+export const getReadableNumber = (number: unknown) => {
+  if (!isNumber(number)) return number;
+
+  return number.toLocaleString();
+};
+
+/* URL utils */
+
+export const getUrlSearchParamValue = (param: string) => {
+  const urlSearchParams = new URLSearchParams(window.location.search);
+  return urlSearchParams.get(param);
+};
+
+/* ALERT utils */
 
 // use browser confirm and prompt to get user confirmation for actions
 export const getConfirmation = (
@@ -168,6 +234,8 @@ export const getConfirmation = (
 
   return isConfirmed;
 };
+
+/* FILE utils */
 
 export const uploadFile = (
   fileHandler: any,
@@ -296,31 +364,4 @@ export const getCurrTimeForFileName = () => {
     .padStart(3, '0');
 
   return [year, month, day, hours, minutes, seconds, milliSeconds].join('_');
-};
-
-export const isValidTemplateLiteral = (literal_: string) => {
-  const literal = literal_.trim();
-  if (!literal) return false;
-  const templateStartIndex = literal.indexOf('{{');
-  const templateEndEdex = literal.indexOf('}}');
-  return (
-    ((templateStartIndex as unknown) as string) !== '-1' &&
-    templateEndEdex > templateStartIndex + 2
-  );
-};
-
-export const getUrlSearchParamValue = (param: string) => {
-  const urlSearchParams = new URLSearchParams(window.location.search);
-  return urlSearchParams.get(param);
-};
-
-export const getLastArrayElement = <T = any>(array: T[]) => {
-  if (!array) return null;
-  if (!array.length) return null;
-  return array[array.length - 1];
-};
-
-export const getFirstArrayElement = <T = any>(array: T[]) => {
-  if (!array) return null;
-  return array[0];
 };
