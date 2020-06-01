@@ -115,6 +115,48 @@ const vMakeRowsRequest = () => {
   };
 };
 
+const getSQLCount = ({
+  dispatch,
+  headers,
+  table,
+  schema,
+  query,
+  successCallback,
+}) => {
+  const url = Endpoints.query;
+  const requestBody = generateSelectQuery(
+    'count',
+    generateTableDef(table, schema),
+    query
+  );
+  const options = {
+    method: 'POST',
+    body: JSON.stringify(requestBody),
+    headers,
+    credentials: globalCookiePolicy,
+  };
+  const options2 = {
+    method: 'POST',
+    body: JSON.stringify(getRunSqlQuery('EXPLAIN SELECT * FROM test')), // TODO querybuilder
+    headers,
+    credentials: globalCookiePolicy,
+  };
+
+  let firstDispatch;
+  dispatch(requestAction(url, options2)).then(({ result }) => {
+    // TODO parse result as another pure function
+    if (result && result instanceof Array && result[1] && result[1][0]) {
+      const rowsRegx = new RegExp(/ rows=([\d]+)/);
+      const count = result[1][0].match(rowsRegx)[1];
+      // if firstDispatch is not done, dispatch this apx value.
+      if (!firstDispatch) successCallback({ count: '~' + count });
+    }
+  });
+  return dispatch(requestAction(url, options)).then(successCallback, error => {
+    dispatch(showErrorNotification('Count query failed!', error.error, error));
+  });
+};
+
 const vMakeCountRequest = () => {
   return (dispatch, getState) => {
     const {
@@ -122,39 +164,28 @@ const vMakeCountRequest = () => {
       currentSchema,
       view,
     } = getState().tables;
-    const url = Endpoints.query;
 
-    const requestBody = generateSelectQuery(
-      'count',
-      generateTableDef(originalTable, currentSchema),
-      view.query
-    );
+    const headers = dataHeaders(getState);
+    const successCallback = ({ count }) => {
+      const currentTable = getState().tables.currentTable;
 
-    const options = {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: dataHeaders(getState),
-      credentials: globalCookiePolicy,
-    };
-
-    return dispatch(requestAction(url, options)).then(
-      data => {
-        const currentTable = getState().tables.currentTable;
-
-        // in case table has changed before count load
-        if (currentTable === originalTable) {
-          dispatch({
-            type: V_COUNT_REQUEST_SUCCESS,
-            count: data.count,
-          });
-        }
-      },
-      error => {
-        dispatch(
-          showErrorNotification('Count query failed!', error.error, error)
-        );
+      // in case table has changed before count load
+      if (currentTable === originalTable) {
+        dispatch({
+          type: V_COUNT_REQUEST_SUCCESS,
+          count: count,
+        });
       }
-    );
+    };
+    getSQLCount({
+      dispatch,
+      headers,
+      table: originalTable,
+      schema: currentSchema,
+      query: view.query,
+      getState,
+      successCallback,
+    });
   };
 };
 
