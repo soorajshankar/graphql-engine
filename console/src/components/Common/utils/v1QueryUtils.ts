@@ -369,7 +369,9 @@ export const getForeignKeyOptionsQuery = (
 
 export const generateSelectQuery = (
   type: string,
-  tableDef: { tableName: string; schemaName: string },
+  tableDef:
+    | { tableName: string; schemaName: string }
+    | { name: string; schema: string },
   {
     where,
     limit,
@@ -377,7 +379,7 @@ export const generateSelectQuery = (
     order_by,
     columns,
   }: {
-    where: object;
+    where?: object;
     limit?: number;
     offset?: number;
     order_by?: 'asc' | 'desc';
@@ -423,12 +425,12 @@ export const getConsoleOptsQuery = () =>
     }
   );
 
-export const getSaveRemoteRelQuery = (args, isNew) => ({
+export const getSaveRemoteRelQuery = (args: object, isNew: boolean) => ({
   type: `${isNew ? 'create' : 'update'}_remote_relationship`,
   args,
 });
 
-export const getDropRemoteRelQuery = (name, table) => ({
+export const getDropRemoteRelQuery = (name: string, table: string) => ({
   type: 'delete_remote_relationship',
   args: {
     name,
@@ -436,7 +438,9 @@ export const getDropRemoteRelQuery = (name, table) => ({
   },
 });
 
-export const getRemoteSchemaIntrospectionQuery = remoteSchemaName => ({
+export const getRemoteSchemaIntrospectionQuery = (
+  remoteSchemaName: string
+) => ({
   type: 'introspect_remote_schema',
   args: {
     name: remoteSchemaName,

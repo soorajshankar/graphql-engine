@@ -15,6 +15,10 @@ export const getTableType = table => {
   return table.table_type;
 };
 
+export const equalTableDefs = (tableDef1, tableDef2) =>
+  tableDef1.schemaName === tableDef2.schemaName &&
+  tableDef1.tableName === tableDef2.tableName;
+
 // TODO: figure out better pattern for overloading fns
 // tableName and tableNameWithSchema are either/or arguments
 export const generateTableDef = (
@@ -36,10 +40,6 @@ export const generateTableDef = (
 export const getTableDef = table => {
   return generateTableDef(getTableName(table), getTableSchema(table));
 };
-
-export const equalTableDefs = (tableDef1, tableDef2) =>
-  tableDef1.schemaName === tableDef2.schemaName &&
-  tableDef1.tableName === tableDef2.tableName;
 
 export const getQualifiedTableDef = tableDef => {
   return isString(tableDef) ? generateTableDef(tableDef) : tableDef;

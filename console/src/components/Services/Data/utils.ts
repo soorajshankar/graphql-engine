@@ -16,6 +16,7 @@ import {
   ConsoleOpts,
   Mappings,
 } from './Types';
+import { equalTableDefs } from '../../Common/utils/pgUtils';
 
 export const INTEGER = 'integer';
 export const SERIAL = 'serial';
