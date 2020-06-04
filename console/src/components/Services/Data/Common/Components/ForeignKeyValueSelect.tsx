@@ -88,11 +88,11 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
 
   let options = columnFkOpts.current
     ? columnFkOpts.current.data.map(row => ({
-      label: `${row[columnFkOpts.current!.displayName]} (${
-        row[columnFkOpts.current!.to]
-      })`,
-      value: row[columnFkOpts.current!.to],
-    }))
+        label: `${row[columnFkOpts.current!.displayName]} (${
+          row[columnFkOpts.current!.to]
+        })`,
+        value: row[columnFkOpts.current!.to],
+      }))
     : [];
 
   // Creating new option based on input
