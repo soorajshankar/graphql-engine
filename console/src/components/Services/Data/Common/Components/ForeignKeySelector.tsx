@@ -1,9 +1,10 @@
 import React from 'react';
+import Col from 'react-bootstrap/lib/Col';
+import Row from 'react-bootstrap/lib/Row';
+
 import styles from '../../../../Common/TableCommon/Table.scss';
 import { fkViolationOnUpdate, fkViolationOnDelete } from '../TooltipMessages';
 import { updateSchemaInfo } from '../../DataActions';
-import Col from 'react-bootstrap/lib/Col';
-import Row from 'react-bootstrap/lib/Row';
 import ToolTip from '../../../../Common/Tooltip/Tooltip';
 import { ForeignKey } from '../../Types';
 
@@ -64,8 +65,8 @@ const ForeignKeySelector: React.FC<Props> = ({
       const options = [];
 
       options.push(
-        <option key={-1} value={''} disabled>
-          {'-- reference schema --'}
+        <option key={-1} value="" disabled>
+          -- reference schema --
         </option>
       );
 
@@ -129,8 +130,8 @@ const ForeignKeySelector: React.FC<Props> = ({
       const options = [];
 
       options.push(
-        <option key={-1} value={''} disabled>
-          {'-- reference table --'}
+        <option key={-1} value="" disabled>
+          -- reference table --
         </option>
       );
 
@@ -251,6 +252,7 @@ const ForeignKeySelector: React.FC<Props> = ({
               <i
                 className={`${styles.fontAwosomeClose} fa-lg fa fa-times`}
                 onClick={dispatchRemoveCol}
+                role="button"
               />
             );
           }
@@ -271,7 +273,7 @@ const ForeignKeySelector: React.FC<Props> = ({
                 >
                   {lc === '' && (
                     <option value="" disabled>
-                      {'-- column --'}
+                      -- column --
                     </option>
                   )}
                   {orderedColumns.map(oc => {
@@ -294,7 +296,7 @@ const ForeignKeySelector: React.FC<Props> = ({
                 >
                   {rc === '' && (
                     <option value="" disabled>
-                      {'-- ref_column --'}
+                      -- ref_column --
                     </option>
                   )}
                   {refTables[refTableName] &&
@@ -318,7 +320,7 @@ const ForeignKeySelector: React.FC<Props> = ({
                 >
                   {!displayName && (
                     <option value="" disabled>
-                      {'-- display_name --'}
+                      -- display_name --
                     </option>
                   )}
                   {/* TODO: come up with better solution for remove */}
@@ -355,7 +357,7 @@ const ForeignKeySelector: React.FC<Props> = ({
     const radios = (action: 'onUpdate' | 'onDelete') => {
       const selected = foreignKey[action];
       return (
-        <div className={'row'}>
+        <div className="row">
           {violiationActions.map(va => {
             const onCheck = () => {
               const newFks = JSON.parse(JSON.stringify(foreignKeys));

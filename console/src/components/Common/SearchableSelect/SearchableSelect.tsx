@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import React, { ReactText } from 'react';
 import Select, {
   components,
@@ -87,7 +88,7 @@ const SearchableSelectBox: React.FC<Props> = ({
   }
 
   if (value && !isObject(value)) {
-    value = { value: value, label: value };
+    value = { value, label: value };
   }
 
   return (
