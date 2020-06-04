@@ -63,7 +63,7 @@ export const TypedInput: React.FC<Props> = ({
   const isAutoIncrement = isColumnAutoIncrement(col);
   const placeHolder = hasDefault ? colDefault : getPlaceholder(colType);
   const getDefaultValue = () => {
-    if (prevValue) return prevValue;
+    if (prevValue !== undefined) return prevValue;
     if (clone && colName in clone) return clone[colName];
     return '';
   };
@@ -174,7 +174,7 @@ export const TypedInput: React.FC<Props> = ({
 
     case BOOLEAN:
       return (
-        <select {...standardInputProps} defaultValue={placeHolder}>
+        <select {...standardInputProps}>
           <option value="" disabled>
             -- bool --
           </option>

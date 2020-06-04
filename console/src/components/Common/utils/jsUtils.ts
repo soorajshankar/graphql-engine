@@ -1,7 +1,5 @@
 // TODO: make functions from this file available without imports
 
-import { showErrorNotification } from '../../Services/Common/Notification';
-
 type Json =
   | null
   | boolean
@@ -34,6 +32,14 @@ export const isString = (value: unknown): value is string => {
 
 export const isNumber = (value: unknown): value is number => {
   return typeof value === 'number';
+};
+
+export const isFloat = (n: unknown): n is number => {
+  return typeof n === 'number' && n % 1 !== 0;
+};
+
+export const isBoolean = (value: unknown): value is boolean => {
+  return typeof value === 'boolean';
 };
 
 export const isPromise = (value: unknown): value is Promise<any> => {
@@ -240,8 +246,9 @@ export const getConfirmation = (
 export const uploadFile = (
   fileHandler: any,
   fileFormat = null,
-  invalidFileHandler: ((fileName: string) => void) | null = null
-) => (dispatch: any) => {
+  invalidFileHandler: ((fileName: string) => void) | null = null,
+  errorCallback: ((...args: string[]) => void) | null = null
+) => {
   const fileInputElement = document.createElement('div');
   fileInputElement.innerHTML = '<input style="display:none" type="file">';
   const fileInput = fileInputElement.firstChild as HTMLElement;
@@ -260,12 +267,10 @@ export const uploadFile = (
 
         if (invalidFileHandler) {
           invalidFileHandler(fileName);
-        } else {
-          dispatch(
-            showErrorNotification(
-              'Invalid file format',
-              `Expected a ${expectedFileSuffix} file`
-            )
+        } else if (errorCallback) {
+          errorCallback(
+            'Invalid file format',
+            `Expected a ${expectedFileSuffix} file`
           );
         }
 

@@ -16,7 +16,6 @@ import {
   ConsoleOpts,
   Mappings,
 } from './Types';
-import { equalTableDefs } from '../../Common/utils/pgUtils';
 
 export const INTEGER = 'integer';
 export const SERIAL = 'serial';
@@ -451,6 +450,7 @@ FROM (
     pgc.relname as table_name,
     case
       when pgc.relkind = 'r' then 'TABLE'
+      when pgc.relkind = 'f' then 'FOREIGN TABLE'
       when pgc.relkind = 'v' then 'VIEW'
       when pgc.relkind = 'm' then 'MATERIALIZED VIEW'
     end as table_type,
@@ -510,7 +510,7 @@ FROM (
       LEFT JOIN (pg_collation co JOIN pg_namespace nco ON (co.collnamespace = nco.oid))
         ON a.attcollation = co.oid AND (nco.nspname, co.collname) <> ('pg_catalog', 'default')
     WHERE (NOT pg_is_other_temp_schema(nc.oid))
-      AND a.attnum > 0 AND NOT a.attisdropped AND c.relkind in ('r', 'v', 'm')
+      AND a.attnum > 0 AND NOT a.attisdropped AND c.relkind in ('r', 'v', 'm', 'f')
       AND (pg_has_role(c.relowner, 'USAGE')
            OR has_column_privilege(c.oid, a.attnum,
                                    'SELECT, INSERT, UPDATE, REFERENCES'))
@@ -559,7 +559,7 @@ FROM (
     AND isv.table_name   = pgc.relname
 
   WHERE
-    pgc.relkind IN ('r', 'v', 'm')
+    pgc.relkind IN ('r', 'v', 'f', 'm')
     ${whereQuery}
   GROUP BY pgc.oid, pgn.nspname, pgc.relname, table_type, isv.*
 ) AS info;
@@ -571,11 +571,51 @@ FROM (
   );
 };
 
+const generateWhereObject = (options: any) => {
+  const where: Record<string, any> = {};
+  if (options.schemas) {
+    options.schemas.forEach((s: unknown) => {
+      if (!where.$and) where.$and = [];
+
+      where.$and.push({
+        table_schema: s,
+      });
+    });
+  }
+  if (options.tables) {
+    options.tables.forEach((t: any) => {
+      if (!where.$and) where.$and = [];
+      where.$and.push({
+        table_schema: t.table_schema,
+        table_name: t.table_name,
+      });
+    });
+  }
+  return where;
+};
+
+export const fetchTrackedTableRemoteRelationshipQuery = (options: any) => {
+  const query = {
+    type: 'select',
+    args: {
+      table: {
+        schema: 'hdb_catalog',
+        name: 'hdb_remote_relationship',
+      },
+      columns: ['*.*', 'remote_relationship_name'],
+      where: generateWhereObject(options),
+      order_by: [{ column: 'remote_relationship_name', type: 'asc' }],
+    },
+  };
+  return query;
+};
+
 export const mergeLoadSchemaData = (
   infoSchemaTableData: AllSchemas,
   hdbTableData: AllSchemas,
   fkData: ForeignKeyConstraint[],
-  refFkData: Array<{ ref_table_table_schema: string; ref_table: string }>
+  refFkData: Array<{ ref_table_table_schema: string; ref_table: string }>,
+  remoteRelData: any[]
 ) => {
   const _mergedTableData: AllSchemas = [];
 
@@ -601,6 +641,7 @@ export const mergeLoadSchemaData = (
     let _uniqueConstraints = [];
     let _fkConstraints: ForeignKeyConstraint[] = [];
     let _refFkConstraints: any = [];
+    let _remoteRelationships: any = [];
     let _isEnum = false;
     let _checkConstraints = [];
     let _configuration = {};
@@ -625,6 +666,11 @@ export const mergeLoadSchemaData = (
           fk.ref_table_table_schema === _tableSchema &&
           fk.ref_table === _tableName
       );
+
+      _remoteRelationships = remoteRelData.filter(
+        rel =>
+          rel.table_schema === _tableSchema && rel.table_name === _tableName
+      );
     }
 
     const _mergedInfo = {
@@ -643,6 +689,7 @@ export const mergeLoadSchemaData = (
       foreign_key_constraints: _fkConstraints,
       opp_foreign_key_constraints: _refFkConstraints,
       view_info: _viewInfo,
+      remote_relationships: _remoteRelationships,
       is_enum: _isEnum,
       configuration: _configuration,
       computed_fields: _computed_fields,
