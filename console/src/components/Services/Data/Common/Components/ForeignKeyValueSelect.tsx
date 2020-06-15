@@ -51,6 +51,7 @@ type Props = {
   placeholder: string;
   columnName: string;
   refTables: any;
+  foreignKey:any;
 };
 
 export const ForeignKeyValueSelect: React.FC<Props> = ({
@@ -63,6 +64,7 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
   columnName,
   placeholder,
   refTables,
+  foreignKey,
 }) => {
   const [searchValue, setSearchValue] = useState('');
 
@@ -111,7 +113,7 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
     }
     return selectedOption;
   };
-  const displayNames = refTables[columnFkOpts?.current?.refTable || ''] || [];
+  const displayNames = refTables[foreignKey.ref_table || ''] || [];
   console.log('>>>>>>', columnFkOpts, displayNames);
   return (
     <>

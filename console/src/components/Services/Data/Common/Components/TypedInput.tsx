@@ -128,6 +128,7 @@ export const TypedInput: React.FC<Props> = ({
         standardInputProps={standardInputProps}
         columnName={colName}
         refTables={refTables}
+        foreignKey={foreignKey}
         placeholder={placeHolder}
         onFkValueChange={onFkValueChange}
       />
