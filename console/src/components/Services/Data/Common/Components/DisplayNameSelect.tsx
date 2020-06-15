@@ -1,0 +1,46 @@
+import React from 'react';
+
+type OptionsType = {
+  name: string;
+  type: string; // TODO replace with common pg type while Type Imports
+};
+export interface DisplayNameSelectProps {
+  displayName?: string;
+  options: OptionsType[];
+}
+
+export const DisplayNameSelect: React.FC<DisplayNameSelectProps> = ({
+  displayName = '',
+  options = [{ name: 'test', type: 'text' }],
+}) => {
+  return (
+    <div>
+      {/*  add tooltip that it only works for "varchar"/"text"/"citext */}
+      <select
+        // className={`form-control ${styles.select} ${styles.wd100Percent}`}
+        value={displayName}
+        // onChange={onDisplayColumnNameChange}
+        // disabled={!refTableName || !lc || !rc}
+        title="Select display column"
+      >
+        {!displayName && (
+          <option value="" disabled>
+            -- display_name --
+          </option>
+        )}
+        {/* TODO: come up with better solution for remove */}
+        {displayName && <option value="">-- remove --</option>}
+        {options &&
+          options
+            .filter(dnOpt => ['text', 'citext', 'varchar'].includes(dnOpt.type))
+            .map(dnOpt => {
+              return (
+                <option key={dnOpt.name} value={dnOpt.name}>
+                  {dnOpt.name}
+                </option>
+              );
+            })}
+      </select>
+    </div>
+  );
+};

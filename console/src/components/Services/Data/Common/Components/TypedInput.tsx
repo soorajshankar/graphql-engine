@@ -33,8 +33,10 @@ type Props = {
   onFocus: () => void;
   prevValue: string;
   hasDefault: boolean;
+  foreignKey: any;
   fkOptions: Array<FkColOption>;
   getFkOptions: (opts: FkColOption, value: string) => Promise<void>;
+  refTables: any; // TODO clean before commit
   onFkValueChange?: ComponentProps<typeof SearchableSelect>['onChange'];
   selectedOption: Option;
 };
@@ -51,6 +53,8 @@ export const TypedInput: React.FC<Props> = ({
   hasDefault,
   fkOptions,
   getFkOptions,
+  refTables,
+  foreignKey = false,
   onFkValueChange,
   selectedOption,
 }) => {
@@ -59,7 +63,7 @@ export const TypedInput: React.FC<Props> = ({
     data_type: colType,
     column_default: colDefault,
   } = col;
-
+  console.log({ fkOptions });
   const isAutoIncrement = isColumnAutoIncrement(col);
   const placeHolder = hasDefault ? colDefault : getPlaceholder(colType);
   const getDefaultValue = () => {
@@ -113,11 +117,7 @@ export const TypedInput: React.FC<Props> = ({
     );
   }
 
-  if (
-    onFkValueChange &&
-    fkOptions &&
-    fkOptions.some(opts => opts.from === colName)
-  ) {
+  if (foreignKey) {
     delete standardInputProps.ref;
     return (
       <ForeignKeyValueSelect
@@ -127,6 +127,7 @@ export const TypedInput: React.FC<Props> = ({
         selectedOption={selectedOption}
         standardInputProps={standardInputProps}
         columnName={colName}
+        refTables={refTables}
         placeholder={placeHolder}
         onFkValueChange={onFkValueChange}
       />

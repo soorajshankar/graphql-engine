@@ -6,7 +6,6 @@ import {
   handleMigrationErrors,
   makeMigrationCall,
   LOAD_SCHEMA,
-  setConsoleFKOptions,
   removeConsoleFKOptions,
 } from '../DataActions';
 import _push from '../push';
@@ -632,15 +631,15 @@ const saveForeignKeys = (index, tableSchema, columns, displayColumnNames) => {
     const successMsg = 'Foreign key saved';
     const errorMsg = 'Failed setting foreign key';
 
-    const fkDisplayOpts = {
-      tableName,
-      schemaName,
-      constraintName: generatedConstraintName,
-      mappings: displayColumnsMappings,
-    };
+    // const fkDisplayOpts = {
+    //   tableName,
+    //   schemaName,
+    //   constraintName: generatedConstraintName,
+    //   mappings: displayColumnsMappings,
+    // };
 
     const customOnSuccess = () => {
-      dispatch(setConsoleFKOptions(fkDisplayOpts));
+      // dispatch(setConsoleFKOptions(fkDisplayOpts));
       if (!constraintName) {
         const newFks = [...getState().tables.modify.fkModify];
         newFks[index].constraintName = generatedConstraintName;

@@ -834,50 +834,6 @@ const fetchColumnTypeInfo = () => {
   };
 };
 
-/**
- * @typedef Mapping
- * @param {string} refTableName
- * @param {string} refColumnName
- * @param {string} displayColumnName
- *
- * @typedef DisplayConfig
- * @param {string} tableName
- * @param {string} schemaName
- * @param {string} constraintName
- * @param {Mapping[]} mappings
- *
- * @param {DisplayConfig} displayConfig
- */
-const setConsoleFKOptions = displayConfig => (dispatch, getState) => {
-  const url = Endpoints.getSchema;
-
-  // TODO: don't use telemetry
-  const { hasura_uuid } = getState().telemetry;
-  const { consoleOpts } = getState().tables;
-
-  const newConsoleState = mergeDisplayConfig(displayConfig, consoleOpts);
-
-  const options = {
-    credentials: globalCookiePolicy,
-    method: 'POST',
-    headers: dataHeaders(getState),
-    body: JSON.stringify(
-      getRunSqlQuery(
-        `update hdb_catalog.hdb_version set console_state = '${JSON.stringify(
-          newConsoleState
-        )}' where hasura_uuid='${hasura_uuid}';`
-      )
-    ),
-  };
-
-  return dispatch(requestAction(url, options)).then(() =>
-    dispatch({
-      type: SET_HASURA_OPTS,
-      data: newConsoleState,
-    })
-  );
-};
-
 const removeConsoleFKOptions = (schemaName, tableName, fkConstraintName) => (
   dispatch,
   getState
@@ -1154,7 +1110,6 @@ export {
   fetchColumnTypeInfo,
   RESET_COLUMN_TYPE_INFO,
   setUntrackedRelations,
-  setConsoleFKOptions,
   loadConsoleOpts,
   SET_HASURA_OPTS,
   getForeignKeyOptions,

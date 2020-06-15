@@ -20,6 +20,7 @@ import {
 } from '../../../Common/utils/pgUtils';
 import { TypedInput } from '../Common/Components/TypedInput';
 import styles from '../../../Common/TableCommon/Table.scss';
+import { getExistingFKConstraints } from '../Common/Components/utils';
 
 class InsertItem extends Component {
   constructor() {
@@ -78,9 +79,37 @@ class InsertItem extends Component {
 
     const columns = currentTable.columns.sort(ordinalColSort);
 
+    // columns in the right order with their indices
+    const orderedColumns = columns.map((c, i) => ({
+      name: c.column_name,
+      index: i,
+    }));
+    // restructure the existing foreign keys and add it to fkModify (for easy processing)
+    const existingForeignKeys = getExistingFKConstraints(
+      currentTable,
+      orderedColumns
+    );
+    console.debug('>>>>>', schemas, orderedColumns, existingForeignKeys);
+
+    // Generate a list of reference schemas and their columns
+    const refTables = {};
+    existingForeignKeys.map(fk => {
+      schemas.forEach(ts => {
+        if (ts.table_schema === fk.refSchemaName) {
+          refTables[ts.table_name] = ts.columns.map(c => ({
+            name: c.column_name,
+            type: c.data_type,
+          }));
+        }
+      });
+    });
+    console.log('>>>>', refTables);
+    // const columns = currentTable.columns.sort(ordinalColSort);
+
     const refs = {};
 
     const elements = columns.map((col, i) => {
+      console.log(col);
       const colName = col.column_name;
       const hasDefault = col.column_default && col.column_default.trim() !== '';
       const isNullable = col.is_nullable && col.is_nullable !== 'NO';
@@ -122,6 +151,7 @@ class InsertItem extends Component {
       };
 
       const handleFkOptionChange = ({ value, label }) => {
+        console.log({ value, label });
         onChange(undefined, value.toString());
         this.setState(prev => ({
           ...prev,
@@ -133,9 +163,25 @@ class InsertItem extends Component {
       };
 
       const handleSearchValueChange = (config, value) => {
+        console.log(config, value);
         this.props.dispatch(filterFkOptions(config, value));
       };
-
+      const getForeignKey = (col, schemas) => {
+        let result = false;
+        console.log('>>', col);
+        schemas.forEach(schema => {
+          if (schema.table_name === col.table_name)
+            schema.foreign_key_constraints.forEach(fk => {
+              if (
+                fk.table_name === col.table_name &&
+                fk.columns &&
+                fk.columns[0] === col.column_name
+              )
+                result = fk;
+            });
+        });
+        return result;
+      };
       return (
         <div key={i} className={`form-group ${styles.displayFlexContainer}`}>
           <label
@@ -171,6 +217,8 @@ class InsertItem extends Component {
               getFkOptions={handleSearchValueChange}
               selectedOption={this.state.selectedFkOptions[colName]}
               onFkValueChange={handleFkOptionChange}
+              refTables={refTables}
+              foreignKey={getForeignKey(col, schemas)}
             />
           </span>
           <label className={styles.radioLabel + ' radio-inline'}>
