@@ -1,4 +1,4 @@
-// TODO: make functions from this file available without imports
+import moment from 'moment';
 
 type Json =
   | null
@@ -8,12 +8,16 @@ type Json =
   | Json[]
   | { [prop: string]: Json };
 
+// TODO: make functions from this file available without imports
 /* TYPE utils */
 
 export const isNotDefined = (value: unknown) => {
   return value === null || value === undefined;
 };
 
+/*
+ * Deprecated: Use "isNull" instead
+ */
 export const exists = (value: unknown) => {
   return value !== null && value !== undefined;
 };
@@ -47,6 +51,15 @@ export const isPromise = (value: unknown): value is Promise<any> => {
   return (value as Promise<any>).constructor.name === 'Promise';
 };
 
+export const isValidURL = (value: string) => {
+  try {
+    new URL(value);
+  } catch {
+    return false;
+  }
+  return true;
+};
+
 export const isValidTemplateLiteral = (literal_: string) => {
   const literal = literal_.trim();
   if (!literal) return false;
@@ -55,13 +68,12 @@ export const isValidTemplateLiteral = (literal_: string) => {
   return templateStartIndex !== -1 && templateEndEdex > templateStartIndex + 2;
 };
 
-export const isJsonString = (str: string) => {
+export const isValidDate = (date: Date) => {
   try {
-    JSON.parse(str);
-  } catch (e) {
+    date.toISOString();
+  } catch {
     return false;
   }
-
   return true;
 };
 
@@ -115,6 +127,14 @@ export const isEqual = (value1: Json, value2: Json): boolean => {
   return equal;
 };
 
+export function isJsonString(str: string) {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
 /* ARRAY utils */
 
 export const getLastArrayElement = <T = any>(array: T[]) => {
@@ -165,7 +185,7 @@ export const getAllJsonPaths = (
   };
 
   if (isArray(json)) {
-    json.forEach((subJson, i) => {
+    json.forEach((subJson: any, i: number) => {
       handleSubJson(subJson, addPrefix(i.toString()));
     });
   } else if (isObject(json)) {
@@ -202,7 +222,6 @@ export const getUrlSearchParamValue = (param: string) => {
   const urlSearchParams = new URLSearchParams(window.location.search);
   return urlSearchParams.get(param);
 };
-
 /* ALERT utils */
 
 // use browser confirm and prompt to get user confirmation for actions
@@ -223,7 +242,7 @@ export const getConfirmation = (
   }
 
   if (!hardConfirmation) {
-    isConfirmed = confirm(modalContent);
+    isConfirmed = window.confirm(modalContent);
   } else {
     modalContent += '\n\n';
     modalContent += `Type "${confirmationText}" to confirm:`;
@@ -260,7 +279,7 @@ export const uploadFile = (
 
     let isValidFile = true;
     if (fileFormat) {
-      const expectedFileSuffix = '.' + fileFormat;
+      const expectedFileSuffix = `.${fileFormat}`;
 
       if (!fileName.endsWith(expectedFileSuffix)) {
         isValidFile = false;
@@ -319,11 +338,9 @@ export const downloadObjectAsJsonFile = (fileName: string, object: object) => {
     ? fileName
     : fileName + jsonSuffix;
 
-  const dataString =
-    'data:' +
-    contentType +
-    ',' +
-    encodeURIComponent(JSON.stringify(object, null, 2));
+  const dataString = `data:${contentType},${encodeURIComponent(
+    JSON.stringify(object, null, 2)
+  )}`;
 
   downloadFile(fileNameWithSuffix, dataString);
 };
@@ -351,4 +368,8 @@ export const getCurrTimeForFileName = () => {
   const milliSeconds = currTime.getMilliseconds().toString().padStart(3, '0');
 
   return [year, month, day, hours, minutes, seconds, milliSeconds].join('_');
+};
+
+export const convertDateTimeToLocale = (dateTime: string) => {
+  return moment(dateTime, moment.ISO_8601).format('ddd, MMM Do HH:mm:ss Z');
 };

@@ -123,7 +123,6 @@ class InsertItem extends Component {
     const refs = {};
 
     const elements = columns.map((col, i) => {
-      console.log(col);
       const colName = col.column_name;
       const hasDefault = col.column_default && col.column_default.trim() !== '';
       const isNullable = col.is_nullable && col.is_nullable !== 'NO';

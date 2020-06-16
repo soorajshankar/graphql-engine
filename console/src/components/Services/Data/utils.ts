@@ -17,6 +17,8 @@ import {
   Mappings,
 } from './Types';
 import { equalTableDefs } from '../../Common/utils/pgUtils';
+import { isJsonString } from '../../Common/utils/jsUtils';
+import { ERROR_CODES } from './constants';
 
 export const INTEGER = 'integer';
 export const SERIAL = 'serial';
@@ -913,7 +915,6 @@ export const getDisplayNamesPerKey = (
       const currentFkMappings = currentTableMappings.find(
         opts => opts.constraintName === fk.constraintName
       );
-      console.log({ currentFkMappings });
       if (!currentFkMappings) return;
       fk.colMappings.forEach(colMapping => {
         const newDN = currentFkMappings.mappings.find(
@@ -950,3 +951,32 @@ WHERE
 
 export const isColTypeString = (colType: string) =>
   ['text', 'varchar', 'char', 'bpchar', 'name'].includes(colType);
+
+export const cascadeUpQueries = (upQueries = []) =>
+  upQueries.map((i = {}) => {
+    if (i.type === 'run_sql' || i.type === 'untrack_table') {
+      return {
+        ...i,
+        args: {
+          ...i.args,
+          cascade: true,
+        },
+      };
+    }
+    return i;
+  });
+
+export const getDependencyError = (err = {}) => {
+  if (err.code == ERROR_CODES.dependencyError.code) {
+    // direct dependency error
+    return err;
+  } else if (err.code == ERROR_CODES.dataApiError.code) {
+    // message is coming as error, further parssing willbe based on message key
+    const actualError = isJsonString(err.message)
+      ? JSON.parse(err.message)
+      : {};
+    if (actualError.code == ERROR_CODES.dependencyError.code) {
+      return { ...actualError, message: actualError.error };
+    }
+  }
+};

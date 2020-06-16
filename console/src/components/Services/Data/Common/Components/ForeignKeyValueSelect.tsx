@@ -87,7 +87,6 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
     refTable: foreignKey.ref_table,
     data: [],
   };
-  console.log(columnFkOpts.current, fkOptions);
   const getForeignKeyOptionsThrottled = useMemo(
     () =>
       throttle((value: string) => {
