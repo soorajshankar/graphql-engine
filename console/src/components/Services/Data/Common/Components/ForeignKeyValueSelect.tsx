@@ -51,7 +51,7 @@ type Props = {
   placeholder: string;
   columnName: string;
   refTables: any;
-  foreignKey:any;
+  foreignKey: any;
 };
 
 export const ForeignKeyValueSelect: React.FC<Props> = ({
@@ -69,9 +69,17 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
   const [searchValue, setSearchValue] = useState('');
 
   const columnFkOpts = useRef<FkColOption>();
-  columnFkOpts.current =
-    fkOptions && fkOptions.find(opts => opts.from === columnName);
+  const displayNames = refTables[foreignKey.ref_table || ''] || [];
 
+  columnFkOpts.current = (fkOptions &&
+    fkOptions.find(opts => opts.from === columnName)) || {
+    from: foreignKey.ref_columns[0],
+    to: foreignKey.columns[0],
+    displayName: displayNames[1].name,
+    refTable: foreignKey.ref_table,
+    data: [],
+  };
+  console.log(columnFkOpts.current);
   const getForeignKeyOptionsThrottled = useMemo(
     () =>
       throttle((value: string) => {
@@ -113,7 +121,6 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
     }
     return selectedOption;
   };
-  const displayNames = refTables[foreignKey.ref_table || ''] || [];
   console.log('>>>>>>', columnFkOpts, displayNames);
   return (
     <>
