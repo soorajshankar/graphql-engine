@@ -336,6 +336,7 @@ const filterFkOptions = (fkColOptions, searchValue) => {
 
     return dispatch(requestAction(url, options)).then(
       data => {
+        console.error({ data, fkColOptions });
         if (data.length !== 0) {
           dispatch({
             type: UPDATE_COL_FK_MAPPINGS,
@@ -910,12 +911,9 @@ const upsertFkOptions = ({
   refTable,
 }) => {
   const index = fkOptions.findIndex(
-    opt =>
-      opt.from === from &&
-      opt.to === to &&
-      opt.displayName === displayName &&
-      opt.refTable === refTable
+    opt => opt.from === from && opt.to === to && opt.refTable === refTable
   );
+  console.warn('????>', index);
   // add options
   if (index === -1) {
     return [...fkOptions, { from, to, displayName, refTable, data }];
@@ -923,7 +921,7 @@ const upsertFkOptions = ({
 
   // replace existing options
   const res = [...fkOptions];
-  res[index] = { ...res[index], data };
+  res[index] = { ...res[index], displayName, data };
   return res;
 };
 
