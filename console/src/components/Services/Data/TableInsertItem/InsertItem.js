@@ -22,6 +22,22 @@ import { TypedInput } from '../Common/Components/TypedInput';
 import styles from '../../../Common/TableCommon/Table.scss';
 import { getExistingFKConstraints } from '../Common/Components/utils';
 
+const getForeignKey = (col, schemas) => {
+  let result = false;
+  schemas.forEach(schema => {
+    if (schema.table_name === col.table_name)
+      schema.foreign_key_constraints.forEach(fk => {
+        if (
+          fk.table_name === col.table_name &&
+          fk.columns &&
+          fk.columns[0] === col.column_name
+        )
+          result = fk;
+      });
+  });
+  return result;
+};
+
 class InsertItem extends Component {
   constructor() {
     super();
@@ -89,7 +105,6 @@ class InsertItem extends Component {
       currentTable,
       orderedColumns
     );
-    console.debug('>>>>>', schemas, orderedColumns, existingForeignKeys);
 
     // Generate a list of reference schemas and their columns
     const refTables = {};
@@ -103,7 +118,6 @@ class InsertItem extends Component {
         }
       });
     });
-    console.log('>>>>', refTables);
     // const columns = currentTable.columns.sort(ordinalColSort);
 
     const refs = {};
@@ -151,7 +165,6 @@ class InsertItem extends Component {
       };
 
       const handleFkOptionChange = ({ value, label }) => {
-        console.log({ value, label });
         onChange(undefined, value.toString());
         this.setState(prev => ({
           ...prev,
@@ -163,25 +176,9 @@ class InsertItem extends Component {
       };
 
       const handleSearchValueChange = (config, value) => {
-        console.log(config, value);
         this.props.dispatch(filterFkOptions(config, value));
       };
-      const getForeignKey = (col, schemas) => {
-        let result = false;
-        console.log('>>', col);
-        schemas.forEach(schema => {
-          if (schema.table_name === col.table_name)
-            schema.foreign_key_constraints.forEach(fk => {
-              if (
-                fk.table_name === col.table_name &&
-                fk.columns &&
-                fk.columns[0] === col.column_name
-              )
-                result = fk;
-            });
-        });
-        return result;
-      };
+
       return (
         <div key={i} className={`form-group ${styles.displayFlexContainer}`}>
           <label
@@ -219,36 +216,39 @@ class InsertItem extends Component {
               onFkValueChange={handleFkOptionChange}
               refTables={refTables}
               foreignKey={getForeignKey(col, schemas)}
-            />
+            >
+              <>
+                <label className={styles.radioLabel + ' radio-inline'}>
+                  <input
+                    type="radio"
+                    ref={node => {
+                      refs[colName].nullNode = node;
+                    }}
+                    disabled={!isNullable}
+                    defaultChecked={isNullable}
+                    name={colName + '-value'}
+                    value="NULL"
+                    data-test={`nullable-radio-${i}`}
+                  />
+                  <span className={styles.radioSpan}>NULL</span>
+                </label>
+                <label className={styles.radioLabel + ' radio-inline'}>
+                  <input
+                    type="radio"
+                    ref={node => {
+                      refs[colName].defaultNode = node;
+                    }}
+                    name={colName + '-value'}
+                    value="option3"
+                    disabled={!hasDefault && !isIdentity}
+                    defaultChecked={hasDefault || isIdentity}
+                    data-test={`typed-input-default-${i}`}
+                  />
+                  <span className={styles.radioSpan}>Default</span>
+                </label>
+              </>
+            </TypedInput>
           </span>
-          <label className={styles.radioLabel + ' radio-inline'}>
-            <input
-              type="radio"
-              ref={node => {
-                refs[colName].nullNode = node;
-              }}
-              disabled={!isNullable}
-              defaultChecked={isNullable}
-              name={colName + '-value'}
-              value="NULL"
-              data-test={`nullable-radio-${i}`}
-            />
-            <span className={styles.radioSpan}>NULL</span>
-          </label>
-          <label className={styles.radioLabel + ' radio-inline'}>
-            <input
-              type="radio"
-              ref={node => {
-                refs[colName].defaultNode = node;
-              }}
-              name={colName + '-value'}
-              value="option3"
-              disabled={!hasDefault && !isIdentity}
-              defaultChecked={hasDefault || isIdentity}
-              data-test={`typed-input-default-${i}`}
-            />
-            <span className={styles.radioSpan}>Default</span>
-          </label>
         </div>
       );
     });

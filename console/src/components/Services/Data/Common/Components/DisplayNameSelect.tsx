@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from '../../../../Common/TableCommon/Table.scss';
 
 type OptionsType = {
   name: string;
@@ -19,31 +20,28 @@ export const DisplayNameSelect: React.FC<DisplayNameSelectProps> = ({
     onChange(e.target.value);
   };
   return (
-    <div>
-      {/*  add tooltip that it only works for "varchar"/"text"/"citext */}
-      <select
-        // className={`form-control ${styles.select} ${styles.wd100Percent}`}
-        value={displayName}
-        onChange={onChangeEvent}
-        // disabled={!refTableName || !lc || !rc}
-        title="Select display column"
-      >
-        {!displayName && (
-          <option value="" disabled>
-            -- display_name --
-          </option>
-        )}
-        {/* TODO: come up with better solution for remove */}
-        {displayName && <option value="">-- remove --</option>}
-        {options &&
-          options.map(dnOpt => {
-            return (
-              <option key={dnOpt.name} value={dnOpt.name}>
-                {dnOpt.name}
-              </option>
-            );
-          })}
-      </select>
-    </div>
+    <select
+      className={`form-control ${styles.select} ${styles.wd100Percent}`}
+      value={displayName}
+      onChange={onChangeEvent}
+      // disabled={!refTableName || !lc || !rc}
+      title="Select display column"
+    >
+      {!displayName && (
+        <option value="" disabled>
+          -- display_name --
+        </option>
+      )}
+      {/* TODO: come up with better solution for remove */}
+      {displayName && <option value="">-- remove --</option>}
+      {options &&
+        options.map(dnOpt => {
+          return (
+            <option key={dnOpt.name} value={dnOpt.name}>
+              {dnOpt.name}
+            </option>
+          );
+        })}
+    </select>
   );
 };

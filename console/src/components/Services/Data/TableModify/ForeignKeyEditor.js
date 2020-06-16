@@ -23,13 +23,6 @@ const ForeignKeyEditor = ({
   schemaList,
   consoleOpts,
 }) => {
-  const [displayColumnNames, setDisplayColumnNames] = useState({});
-  useEffect(() => {
-    setDisplayColumnNames(
-      getDisplayNamesPerKey(consoleOpts, tableSchema, fkModify) || {}
-    );
-  }, [consoleOpts]);
-
   const columns = tableSchema.columns.sort(ordinalColSort);
 
   // columns in the right order with their indices
@@ -104,12 +97,6 @@ const ForeignKeyEditor = ({
     };
 
     const constraintName = fk.constraintName || 'new-constraint';
-    const setFkDisplayNames = newColumnNames => {
-      setDisplayColumnNames(prev => ({
-        ...prev,
-        [constraintName]: newColumnNames,
-      }));
-    };
 
     // The content when the editor is expanded
     const expandedContent = () => (
@@ -123,8 +110,6 @@ const ForeignKeyEditor = ({
         orderedColumns={orderedColumns}
         dispatch={dispatch}
         setForeignKeys={setForeignKeys}
-        displayColumnNames={displayColumnNames[constraintName] || []}
-        setDisplayColumnNames={setFkDisplayNames}
       />
     );
 
@@ -153,12 +138,6 @@ const ForeignKeyEditor = ({
       const newFks = [...fkModify];
       newFks[i] = existingForeignKeys[i];
       dispatch(setForeignKeys(newFks));
-      setFkDisplayNames(
-        displayColumnNames[constraintName].slice(
-          0,
-          newFks[i].colMappings.length - 1
-        )
-      );
     };
 
     const collapseButtonText = isLast ? 'Cancel' : 'Close';
@@ -170,7 +149,7 @@ const ForeignKeyEditor = ({
         const isOk = getConfirmation();
         if (isOk) {
           dispatch(
-            removeForeignKey(i, tableSchema, orderedColumns, displayColumnNames)
+            removeForeignKey(i, tableSchema, orderedColumns)
           );
         }
       };
@@ -181,7 +160,7 @@ const ForeignKeyEditor = ({
     if (fkConfig) {
       saveFk = () => {
         dispatch(
-          saveForeignKeys(i, tableSchema, orderedColumns, displayColumnNames)
+          saveForeignKeys(i, tableSchema, orderedColumns)
         );
       };
     }

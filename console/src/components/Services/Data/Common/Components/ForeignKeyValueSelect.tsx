@@ -10,6 +10,7 @@ import throttle from 'lodash.throttle';
 import styles from '../../../../Common/TableCommon/Table.scss';
 import SearchableSelect from '../../../../Common/SearchableSelect/SearchableSelect';
 import { DisplayNameSelect } from './DisplayNameSelect';
+import { ReftablesType } from './TypedInput';
 
 const searchableSelectStyles = {
   container: {
@@ -50,8 +51,9 @@ type Props = {
   standardInputProps: ComponentProps<'select'>;
   placeholder: string;
   columnName: string;
-  refTables: any;
+  refTables: ReftablesType;
   foreignKey: any;
+  wrapperClassName: string;
 };
 
 export const ForeignKeyValueSelect: React.FC<Props> = ({
@@ -65,6 +67,8 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
   placeholder,
   refTables,
   foreignKey,
+  children,
+  wrapperClassName,
 }) => {
   const [searchValue, setSearchValue] = useState('');
 
@@ -73,7 +77,7 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
     refTables[foreignKey.ref_table || ''].filter(dnOpt =>
       ['text', 'citext', 'varchar'].includes(dnOpt.type)
     ) || [];
-  const [displayName, setDisplayName] = useState(displayNames[0].name);
+  const [displayName, setDisplayName] = useState('');
 
   columnFkOpts.current = (fkOptions &&
     fkOptions.find(opts => opts.from === columnName)) || {
@@ -88,6 +92,7 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
     () =>
       throttle((value: string) => {
         return (
+          displayName &&
           columnFkOpts.current &&
           getFkOptions({ ...columnFkOpts.current, displayName }, value)
         );
@@ -125,29 +130,33 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
     }
     return selectedOption;
   };
-  console.log('>>>>>>', columnFkOpts, displayNames);
   return (
     <>
-      <SearchableSelect
-        {...standardInputProps}
-        isClearable
-        options={options}
-        onChange={onFkValueChange}
-        value={getValue()}
-        bsClass={styles.insertBox}
-        styleOverrides={searchableSelectStyles}
-        onInputChange={(v: string) => setSearchValue(v)}
-        filterOption="fulltext"
-        // Treating last search value the same was as selected option,
-        // so that user don't have to click in the dropdown, they can just leave the input
-        onMenuClose={onMenuClose}
-        placeholder={placeholder}
-      />
-      <DisplayNameSelect
-        displayName={displayName}
-        options={displayNames}
-        onChange={setDisplayName}
-      />
+      <span className={wrapperClassName}>
+        <SearchableSelect
+          {...standardInputProps}
+          isClearable
+          options={options}
+          onChange={onFkValueChange}
+          value={getValue()}
+          bsClass={styles.insertBox}
+          styleOverrides={searchableSelectStyles}
+          onInputChange={(v: string) => setSearchValue(v)}
+          filterOption="fulltext"
+          // Treating last search value the same was as selected option,
+          // so that user don't have to click in the dropdown, they can just leave the input
+          onMenuClose={onMenuClose}
+          placeholder={placeholder}
+        />
+      </span>
+      {children}
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        <DisplayNameSelect
+          displayName={displayName}
+          options={displayNames}
+          onChange={setDisplayName}
+        />
+      </div>
     </>
   );
 };

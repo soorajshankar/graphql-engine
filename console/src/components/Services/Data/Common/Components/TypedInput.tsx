@@ -22,6 +22,13 @@ type FkColOption = {
   displayName: string;
   data: Array<Record<string, string>>;
 };
+type TableType = {
+  name: string;
+  type: string;
+};
+export type ReftablesType = {
+  [id: string]: TableType[];
+};
 
 type Props = {
   enumOptions: Record<string, string[]>;
@@ -36,10 +43,11 @@ type Props = {
   foreignKey: any;
   fkOptions: Array<FkColOption>;
   getFkOptions: (opts: FkColOption, value: string) => Promise<void>;
-  refTables: any; // TODO clean before commit
+  refTables: ReftablesType; // TODO clean before commit
   onFkValueChange?: ComponentProps<typeof SearchableSelect>['onChange'];
   selectedOption: Option;
 };
+const wrapperClassName = `${styles.radioLabel} ${styles.typedInputWrapper} radio-inline`;
 
 export const TypedInput: React.FC<Props> = ({
   enumOptions,
@@ -57,13 +65,13 @@ export const TypedInput: React.FC<Props> = ({
   foreignKey = false,
   onFkValueChange,
   selectedOption,
+  children,
 }) => {
   const {
     column_name: colName,
     data_type: colType,
     column_default: colDefault,
   } = col;
-  console.log({ fkOptions });
   const isAutoIncrement = isColumnAutoIncrement(col);
   const placeHolder = hasDefault ? colDefault : getPlaceholder(colType);
   const getDefaultValue = () => {
@@ -100,20 +108,25 @@ export const TypedInput: React.FC<Props> = ({
 
   if (enumOptions && enumOptions[colName]) {
     return (
-      <select
-        {...standardInputProps}
-        className={`form-control ${styles.insertBox}`}
-        defaultValue={prevValue || ''}
-      >
-        <option disabled value="">
-          -- enum value --
-        </option>
-        {enumOptions[colName].map(option => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+      <>
+        <span className={wrapperClassName}>
+          <select
+            {...standardInputProps}
+            className={`form-control ${styles.insertBox}`}
+            defaultValue={prevValue || ''}
+          >
+            <option disabled value="">
+              -- enum value --
+            </option>
+            {enumOptions[colName].map(option => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </span>
+        {children}
+      </>
     );
   }
 
@@ -131,23 +144,38 @@ export const TypedInput: React.FC<Props> = ({
         foreignKey={foreignKey}
         placeholder={placeHolder}
         onFkValueChange={onFkValueChange}
-      />
+        wrapperClassName={wrapperClassName}
+      >
+        {children}
+      </ForeignKeyValueSelect>
     );
   }
 
   if (isAutoIncrement) {
-    return <input {...standardInputProps} readOnly placeholder={placeHolder} />;
+    return (
+      <>
+        <span className={wrapperClassName}>
+          <input {...standardInputProps} readOnly placeholder={placeHolder} />
+        </span>
+        {children}
+      </>
+    );
   }
 
   if (prevValue && typeof prevValue === 'object') {
     return (
-      <JsonInput
-        standardProps={{
-          ...standardInputProps,
-          defaultValue: JSON.stringify(prevValue),
-        }}
-        placeholderProp={getPlaceholder(colType)}
-      />
+      <>
+        <span className={wrapperClassName}>
+          <JsonInput
+            standardProps={{
+              ...standardInputProps,
+              defaultValue: JSON.stringify(prevValue),
+            }}
+            placeholderProp={getPlaceholder(colType)}
+          />
+        </span>
+        {children}
+      </>
     );
   }
 
@@ -155,37 +183,59 @@ export const TypedInput: React.FC<Props> = ({
     case JSONB:
     case JSONDTYPE:
       return (
-        <JsonInput
-          standardProps={{
-            ...standardInputProps,
-            defaultValue: prevValue
-              ? JSON.stringify(prevValue)
-              : getDefaultValue(),
-          }}
-          placeholderProp={placeHolder}
-        />
+        <>
+          <span className={wrapperClassName}>
+            <JsonInput
+              standardProps={{
+                ...standardInputProps,
+                defaultValue: prevValue
+                  ? JSON.stringify(prevValue)
+                  : getDefaultValue(),
+              }}
+              placeholderProp={placeHolder}
+            />
+          </span>
+          {children}
+        </>
       );
 
     case TEXT:
       return (
-        <TextInput
-          standardProps={standardInputProps}
-          placeholderProp={placeHolder}
-        />
+        <>
+          <span className={wrapperClassName}>
+            <TextInput
+              standardProps={standardInputProps}
+              placeholderProp={placeHolder}
+            />
+          </span>
+          {children}
+        </>
       );
 
     case BOOLEAN:
       return (
-        <select {...standardInputProps}>
-          <option value="" disabled>
-            -- bool --
-          </option>
-          <option value="true">True</option>
-          <option value="false">False</option>
-        </select>
+        <>
+          <span className={wrapperClassName}>
+            <select {...standardInputProps}>
+              <option value="" disabled>
+                -- bool --
+              </option>
+              <option value="true">True</option>
+              <option value="false">False</option>
+            </select>
+          </span>
+          {children}
+        </>
       );
 
     default:
-      return <input {...standardInputProps} placeholder={placeHolder} />;
+      return (
+        <>
+          <span className={wrapperClassName}>
+            <input {...standardInputProps} placeholder={placeHolder} />
+          </span>
+          {children}
+        </>
+      );
   }
 };

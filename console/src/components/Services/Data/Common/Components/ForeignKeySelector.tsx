@@ -26,8 +26,6 @@ type Props = {
   service: string;
   schemaList: string[];
   refTables: Record<string, { type: string; name: string }[]>;
-  displayColumnNames: string[];
-  setDisplayColumnNames(newNames: string[]): void;
 };
 
 const ForeignKeySelector: React.FC<Props> = ({
@@ -40,8 +38,6 @@ const ForeignKeySelector: React.FC<Props> = ({
   service,
   schemaList,
   refTables,
-  displayColumnNames,
-  setDisplayColumnNames,
 }) => {
   const { refTableName, colMappings, refSchemaName } = foreignKey;
   const numOfFks = foreignKeys.length;
@@ -176,7 +172,7 @@ const ForeignKeySelector: React.FC<Props> = ({
     return (
       <div className={`${styles.add_mar_bottom}`}>
         <Row className={`${styles.add_mar_bottom_mid} ${styles.padd_right_40}`}>
-          {['From', 'To', 'Display column'].map(label => (
+          {['From', 'To'].map(label => (
             <Col sm={4} key={label}>
               <b>{label}:</b>
             </Col>
@@ -188,10 +184,6 @@ const ForeignKeySelector: React.FC<Props> = ({
 
           // to column
           const rc = colMap.refColumn;
-
-          // rel table column display name
-          const displayName =
-            (displayColumnNames && displayColumnNames[_i]) || '';
 
           // dispatch action for setting column config
           const dispatchSetCols = (key: string, value: string) => {
@@ -220,15 +212,6 @@ const ForeignKeySelector: React.FC<Props> = ({
             dispatchSetCols('refColumn', event.target.value);
           };
 
-          const onDisplayColumnNameChange = (
-            event: React.ChangeEvent<HTMLSelectElement>
-          ) => {
-            event.persist();
-            const newColumnNames = [...displayColumnNames];
-            newColumnNames[_i] = event.target.value;
-            setDisplayColumnNames(newColumnNames);
-          };
-
           // dispatch action for removing a pair from column mapping
           const dispatchRemoveCol = () => {
             const newFks = JSON.parse(JSON.stringify(foreignKeys));
@@ -238,9 +221,6 @@ const ForeignKeySelector: React.FC<Props> = ({
             ];
             newFks[index].colMappings = newColMapping;
             dispatch(setForeignKeys(newFks));
-            setDisplayColumnNames(
-              displayColumnNames.filter((_, idx) => idx !== _i)
-            );
           };
 
           // show remove icon for all column pairs except last
@@ -307,36 +287,6 @@ const ForeignKeySelector: React.FC<Props> = ({
                         </option>
                       );
                     })}
-                </select>
-              </Col>
-              <Col sm={4}>
-                {/*  add tooltip that it only works for "varchar"/"text"/"citext */}
-                <select
-                  className={`form-control ${styles.select} ${styles.wd100Percent}`}
-                  value={displayName}
-                  onChange={onDisplayColumnNameChange}
-                  disabled={!refTableName || !lc || !rc}
-                  title="Select display column"
-                >
-                  {!displayName && (
-                    <option value="" disabled>
-                      -- display_name --
-                    </option>
-                  )}
-                  {/* TODO: come up with better solution for remove */}
-                  {displayName && <option value="">-- remove --</option>}
-                  {refTables[refTableName] &&
-                    refTables[refTableName]
-                      .filter(dnOpt =>
-                        ['text', 'citext', 'varchar'].includes(dnOpt.type)
-                      )
-                      .map(dnOpt => {
-                        return (
-                          <option key={dnOpt.name} value={dnOpt.name}>
-                            {dnOpt.name}
-                          </option>
-                        );
-                      })}
                 </select>
               </Col>
               <div className={styles.width_40}>{removeIcon}</div>

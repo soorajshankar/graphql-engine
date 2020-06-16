@@ -513,7 +513,7 @@ const savePrimaryKeys = (tableName, schemaName, constraintName) => {
   };
 };
 
-const saveForeignKeys = (index, tableSchema, columns, displayColumnNames) => {
+const saveForeignKeys = (index, tableSchema, columns) => {
   return (dispatch, getState) => {
     dispatch({ type: REMOVE_FOREIGN_KEY });
     const fk = getState().tables.modify.fkModify[index];
@@ -529,7 +529,6 @@ const saveForeignKeys = (index, tableSchema, columns, displayColumnNames) => {
     } = fk;
     const mappingObj = {};
     const filteredMappings = [];
-    const displayColumnsMappings = [];
     for (let _i = colMappings.length - 1; _i >= 0; _i--) {
       const cm = colMappings[_i];
       if (cm.column && cm.refColumn) {
@@ -545,18 +544,6 @@ const saveForeignKeys = (index, tableSchema, columns, displayColumnNames) => {
         }
         mappingObj[cm.column] = cm.refColumn;
         filteredMappings.push(cm);
-      }
-
-      if (
-        displayColumnNames[constraintName] &&
-        displayColumnNames[constraintName][_i]
-      ) {
-        displayColumnsMappings.push({
-          displayColumnName: displayColumnNames[constraintName][_i],
-          refColumnName: cm.refColumn,
-          columnName: columns[cm.column].name,
-          refTableName,
-        });
       }
     }
     const lcols = filteredMappings.map(cm => `"${columns[cm.column].name}"`);
