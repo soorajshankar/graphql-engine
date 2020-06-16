@@ -901,6 +901,31 @@ export const fetchRoleList = () => (dispatch, getState) => {
     }
   );
 };
+const upsertFkOptions = ({
+  fkOptions = [],
+  data,
+  from,
+  to,
+  displayName,
+  refTable,
+}) => {
+  const index = fkOptions.findIndex(
+    opt =>
+      opt.from === from &&
+      opt.to === to &&
+      opt.displayName === displayName &&
+      opt.refTable === refTable
+  );
+  // add options
+  if (index === -1) {
+    return [...fkOptions, { from, to, displayName, refTable, data }];
+  }
+
+  // replace existing options
+  const res = [...fkOptions];
+  res[index] = { ...res[index], data };
+  return res;
+};
 
 /* ******************************************************* */
 const dataReducer = (state = defaultState, action) => {
@@ -1064,19 +1089,13 @@ const dataReducer = (state = defaultState, action) => {
       const { to, from, displayName, refTable, data } = action.data;
       return {
         ...state,
-        fkOptions: state.fkOptions.map(opt => {
-          if (
-            opt.from === from &&
-            opt.to === to &&
-            opt.displayName === displayName &&
-            opt.refTable === refTable
-          ) {
-            return {
-              ...opt,
-              data,
-            };
-          }
-          return opt;
+        fkOptions: upsertFkOptions({
+          fkOptions: state.fkOptions,
+          data,
+          from,
+          to,
+          displayName,
+          refTable,
         }),
       };
     default:

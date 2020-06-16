@@ -7,19 +7,24 @@ type OptionsType = {
 export interface DisplayNameSelectProps {
   displayName?: string;
   options: OptionsType[];
+  onChange: (val: string) => void;
 }
 
 export const DisplayNameSelect: React.FC<DisplayNameSelectProps> = ({
   displayName = '',
   options = [{ name: 'test', type: 'text' }],
+  onChange = console.warn,
 }) => {
+  const onChangeEvent = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(e.target.value);
+  };
   return (
     <div>
       {/*  add tooltip that it only works for "varchar"/"text"/"citext */}
       <select
         // className={`form-control ${styles.select} ${styles.wd100Percent}`}
         value={displayName}
-        // onChange={onDisplayColumnNameChange}
+        onChange={onChangeEvent}
         // disabled={!refTableName || !lc || !rc}
         title="Select display column"
       >
@@ -31,15 +36,13 @@ export const DisplayNameSelect: React.FC<DisplayNameSelectProps> = ({
         {/* TODO: come up with better solution for remove */}
         {displayName && <option value="">-- remove --</option>}
         {options &&
-          options
-            .filter(dnOpt => ['text', 'citext', 'varchar'].includes(dnOpt.type))
-            .map(dnOpt => {
-              return (
-                <option key={dnOpt.name} value={dnOpt.name}>
-                  {dnOpt.name}
-                </option>
-              );
-            })}
+          options.map(dnOpt => {
+            return (
+              <option key={dnOpt.name} value={dnOpt.name}>
+                {dnOpt.name}
+              </option>
+            );
+          })}
       </select>
     </div>
   );

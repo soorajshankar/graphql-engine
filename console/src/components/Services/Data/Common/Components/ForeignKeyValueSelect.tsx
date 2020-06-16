@@ -69,13 +69,17 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
   const [searchValue, setSearchValue] = useState('');
 
   const columnFkOpts = useRef<FkColOption>();
-  const displayNames = refTables[foreignKey.ref_table || ''] || [];
+  const displayNames =
+    refTables[foreignKey.ref_table || ''].filter(dnOpt =>
+      ['text', 'citext', 'varchar'].includes(dnOpt.type)
+    ) || [];
+  const [displayName, setDisplayName] = useState(displayNames[0].name);
 
   columnFkOpts.current = (fkOptions &&
     fkOptions.find(opts => opts.from === columnName)) || {
-    from: foreignKey.ref_columns[0],
-    to: foreignKey.columns[0],
-    displayName: displayNames[1].name,
+    from: foreignKey.columns[0],
+    to: foreignKey.ref_columns[0],
+    displayName,
     refTable: foreignKey.ref_table,
     data: [],
   };
@@ -85,10 +89,11 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
       throttle((value: string) => {
         console.log(columnFkOpts.current, value);
         return (
-          columnFkOpts.current && getFkOptions(columnFkOpts.current, value)
+          columnFkOpts.current &&
+          getFkOptions({ ...columnFkOpts.current, displayName }, value)
         );
       }, 1000),
-    [getFkOptions]
+    [getFkOptions, displayName]
   );
 
   useEffect(() => {
@@ -139,7 +144,11 @@ export const ForeignKeyValueSelect: React.FC<Props> = ({
         onMenuClose={onMenuClose}
         placeholder={placeholder}
       />
-      <DisplayNameSelect options={displayNames} />
+      <DisplayNameSelect
+        displayName={displayName}
+        options={displayNames}
+        onChange={setDisplayName}
+      />
     </>
   );
 };
